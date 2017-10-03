@@ -1,0 +1,11 @@
+[Unit]
+Description=Run MGEN as a service
+
+[Service]
+#Environment= MY_ENVIRONMENT_VAR =/path/to/file.config
+WorkingDirectory=/home/mgen
+ExecStart=/usr/local/bin/mgen input /home/mgen/mgen_traffic.mgn output /home/mgen/mgen_traffic_log.drc check
+User=mgen
+
+[Install]
+WantedBy=multi-user.target

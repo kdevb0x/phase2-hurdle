@@ -1,0 +1,22 @@
+<?xml version="1.0"?>
+<block>
+  <name>env_source</name>
+  <key>envsim_env_source</key>
+  <category>[envsim]</category>
+  <import>import envsim</import>
+  <make>envsim.env_source($tag)</make>
+  <param>
+    <name>Length tag name</name>
+    <key>tag</key>
+    <value>packet_len</value>
+    <type>string</type>
+  </param>
+  <sink>
+    <name>pdus</name>
+    <type>message</type>
+  </sink>
+  <source>
+    <name>out</name>
+    <type>complex</type>
+  </source>
+</block>

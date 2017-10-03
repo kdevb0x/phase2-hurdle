@@ -1,0 +1,10 @@
+[Unit]
+Description=Run MGEN as a service
+
+[Service]
+#Environment= MY_ENVIRONMENT_VAR =/path/to/file.config
+WorkingDirectory=/root/phase2-hurdles/gr-envsim/apps
+ExecStart=/usr/bin/python2 /root/phase2-hurdles/gr-envsim/apps/env_sim_server.py --config-file=/root/phase2-hurdles/gr-envsim/apps/envsim.ini
+
+[Install]
+WantedBy=multi-user.target

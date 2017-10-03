@@ -1,0 +1,31 @@
+# This file describes the network interfaces available on your system
+# and how to activate them. For more information, see interfaces(5).
+
+# The loopback network interface
+auto lo
+iface lo inet loopback
+
+auto eth0
+iface eth0 inet dhcp
+
+# This stanza already handled by LXC
+#auto canbr0
+#iface canbr0 inet static
+#	address 172.16.1.1
+#        netmask 255.255.0.0
+
+auto canbr0:1
+iface canbr0:1 inet static 
+        address 172.16.101.1
+        netmask 255.255.255.0
+
+auto canbr0:2
+iface canbr0:2 inet static 
+        address 172.16.102.1
+        netmask 255.255.255.0
+
+auto canbr0:3
+iface canbr0:3 inet static 
+        address 172.16.103.1
+        netmask 255.255.255.0
+

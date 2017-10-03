@@ -1,0 +1,937 @@
+// uses V3.0 of the Protocol Buffer Specification
+syntax = "proto3";
+
+//=================================================================================================
+//
+// SC2 Phase 1 Collaboration Protocol Specification
+//
+//=================================================================================================
+
+
+//=================================================================================================
+// The following section contains primitive types that all users must support 
+//=================================================================================================
+
+/// A Timestamp consists of the Unix epoch integer seconds and picoseconds
+// This assumes most people will talk about time in terms of real world time from NTP
+message TimeStamp
+{
+    int32 seconds = 1; /// seconds since 1970
+    int64 picoseconds = 2; /// fractional portion of the time, in picoseconds
+}
+
+/// Location in terms of latitude, longitude, and elevation
+// The intent is to make this close to what will be provided directly to SRNs
+message Location
+{
+    double latitude = 1; /// latitude in decimal degrees
+    double longitude = 2; /// longitude in decimal degrees
+    double elevation = 3; /// meters above sea level
+}
+
+//=================================================================================================
+// The following section contains the polymorphic types supporting informational exchanges
+//  Note: None of these messages are intended to be sent "bare"
+//  It is expected that all of the messages in this section will be encapsulated 
+//=================================================================================================
+
+// ------------------------------------------------------------------------------------------------
+// Resource section: the following messages are all network resources
+//
+
+/// A Resource is something that a radio network might use. 
+// For example, a radio network can make use of the spectrum in a given time/frequency/power voxel,
+// or it can choose to steer a null in a given direction.
+// A resource can also be something more abstract that can be used to move traffic.
+message Resource 
+{
+    /// Theoretical queue drain rate if the given spectrum resource(s) are completely available.
+    message TheoreticalRate
+    {
+        repeated SpectrumVoxel spectrum_voxel = 1; /// Spectrum resource used for transmission
+
+        /// Drain rate if specified spectrum_voxel is completely available for us in the presence
+        // of incumbents only. The rate is in bits per second.
+        double drain_rate = 2;
+    }
+
+    //---------- support periodic resource specifications -----------------------------------------
+
+    /// tells whether or not this resource specification should be considered to be periodic
+    bool is_periodic = 1;
+
+    /// period_ps is in picoseconds.
+    // If the resource is declared to be periodic, this defines the repetition period.
+    // This parameter has no meaning if is_periodic is false.
+    int64 period_ps = 2;
+
+    /// component of source, destination, queue tuple which defines locality of resource
+    int32 source_id = 3;
+
+    /// component of source, destination, queue tuple which defines locality of resource
+    int32 destination_id = 4;
+
+    /// component of source, destination, queue tuple which defines locality of resource
+    int32 queue_id = 5;
+
+    /// Only one of these fields can be filled out per individual Resource message
+    oneof payload
+    {
+        /// See the SpectrumVoxel documentation
+        SpectrumVoxel spectrum_voxel = 100;
+
+        /// See the GainPattern documentation
+        GainPattern gain_pattern = 101;
+
+        /// See TheoreticalRate documentation. Used to describe how fast queues can be drained if
+        // full access to given spectrum resource(s) are availible.
+        TheoreticalRate theoretical_rate = 102;
+    }
+}
+
+/// A SpectrumVoxel is one rectangular extent defined in frequency, time, and power.
+message SpectrumVoxel
+{
+    /// the start of the frequency range, in Hz
+    double start_freq_hz = 1;
+
+    /// the end of the frequency range, in Hz
+    double stop_freq_hz = 2;
+
+    /// the start of the time range, in relative picoseconds
+    int64 start_time_ps = 3;
+
+    /// the end of the time range, in relative picoseconds
+    int64 stop_time_ps = 4;
+
+    /// the transmit power used in decibels referenced to a milliwatt
+    double tx_power_dbm = 5;
+}
+
+/// A GainPattern is a sequence of power values in dB versus azimuth angle. This could represent
+// an antenna pattern or the beam pattern resulting from steering a null
+message GainPattern
+{
+    /// Gain at a sequence of points, in dB. To be determined if this is most useful as
+    // defined relative to peak gain (max will always be 0dB) or relative
+    // to an isotropic radiator (dBi)
+    repeated double gain_pattern_db = 1;
+
+    /// Azimuth of the first point in the gain sequence, in degrees. 0 == North
+    double start_azimuth_deg = 2;
+
+    /// Difference in azimuth between two adjacent gain values in the gain list, in degrees.
+    double step_azimuth_deg = 3;
+}
+
+// -----------------------------------------------------------------------------------------------
+// NetworkLevelResourceUsage section: the following section represents mappings between resources
+// and users. Note adding this section needs to be complemented by adding info to Declarations,
+// Queries, etc. Right now those other extensions have not yet been done.
+message NetworkLevelResourceUsage
+{
+    enum UserType  // describes what user type is associated with this resource.
+                   // depending on context, the user may be observed, desired, recommended, etc.
+    {
+        UNSPECIFIED = 0;  // no information 
+        CIRN = 1;         // userID is a CIRN ID.
+                          // Common case will be that the CIRN ID is the same as the message
+                          // sender's CIRN ID.
+                          // userID might be the distinguished UNKNOWN value.
+        NCR = 2;          // userID indicates NCR ID if known, otherwise it is the distinguished
+                          // UNKNOWN value
+        UNRECOGNIZED = 3; // noise or some unrecognized signal
+        AVAILABLE = 4;    // the channel is not currently being used
+    }
+
+    // at present expect a SpectrumVoxel, but may be other resources in the future
+    Resource resource = 100;
+
+    // type of user associated with that Resource
+    UserType userType = 101;
+
+    // for example, a CIRN ID or a NCR ID
+    int32 userID = 102;
+
+    // a number between 0 and 1, semantics depends on context
+    double qualifier = 103;
+}
+
+message SpectrumUsagePreference
+{
+    // in this message, the qualifier semantics are:
+    //   AVAILABLE resource:  0=I don't want to use this Resource, 0.5=don't care, 1=I highly
+    //     prefer to use this Resource
+    //   NCR resource:   0=low confidence that the specified NCR is using that resource,
+    //     1=high confidence
+    //   CIRN resource:  0=OK to give it up, 0.5=don't know, 1=strongly prefer to keep using it
+    // any value in betwen the specified endpoints may also be stated
+    repeated NetworkLevelResourceUsage preferences = 100;
+}
+
+/// This message is used to avoid inteference with the neighbouring nodes' transmission when the
+// transmission characteristic on this node starts. Sent as a polite warning to nearby CIRNs
+message NodeLevelResourceUsage
+{
+    /// list of SpectrumVoxels associated with this ResourceUsage
+    repeated SpectrumVoxel sv = 2;
+
+    /// Tx nodes transmitting on this set of SpectrumVoxel resources
+    repeated Node_Locations tx_node_locations = 3;
+
+    /// The intended Rx nodes associated with these transmissions
+    repeated Node_Locations rx_node_locations = 4;
+}
+
+// ------------------------------------------------------------------------------------------------
+// Performance section: the following messages are all network performance metrics
+//
+
+/// A Performance object is meant to encapsulate some sort of metric important to the network.
+// Performance objects optionally include the concept of source and destination nodes in order
+// to tie Performance metrics to flows between specific nodes in a network, if appropriate.
+message Performance
+{
+    // --------------------------------------------------------------------------------------------
+    // a performance can optionally include either a source node, a destination node,
+    // both, or neither.
+
+    /// source node for the traffic associated with the performance
+    int32 source_node = 1;
+
+    /// destination node for the traffic associated with the performance
+    int32 destination_node = 2;
+
+    /// queue for the traffic associated with the performance
+    int32 queue_id = 3;
+
+    /// only one of these fields can be filled out per individual Performance message
+    oneof payload 
+    {
+        /// scalar_performance is defined as a real number from 0 to 1.
+        // O means things can't get worse,
+        // 1 means everything is great
+        double scalar_performance = 100;
+        double bit_error_rate = 101;
+        double frame_loss_rate = 102;
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
+// Demand section: the following messages are all network demand descriptions
+//
+
+/// A Demand object is meant to encapsulate something that is driving the network.
+// If a network has no demands, it technically has no need to transmit. A Demand might be
+// a requirement on certain amount of throughput for the traffic the network must service,
+// or a maximum tolerable latency. Demand objects optionally include the concept of a
+// source and destination node such that Demands could be tied to a flow between specific nodes
+// in a network. However, Demands also exist locally at the level of queues within a network.
+// When a network is not able to serve its flows well, internal queues will tend to build up
+// in the vicinity of congestion.
+message Demand // abstract top level class
+{
+    // --------------------------------------------------------------------------------------------
+    // a demand can optionally include either a source node, a destination node,
+    // or both.
+
+    /// source node for the traffic associated with the demand
+    int32 source_node = 1;
+
+    /// destination node for the traffic associated with the demand
+    int32 destination_node = 2;
+
+    /// queue id as there may be multiple virtual queues between nodes. A queue may reflect a link
+    // or end-to-end flow.
+    int32 queue_id = 3;
+
+    /// only one of these fields can be filled out per individual Demand message
+    oneof payload
+    {
+        /// throughput is defined as bits per second
+        double throughput = 100;
+
+        /// latency is defined in seconds
+        double latency = 101;
+
+        /// priority is initially arbitrarily defined between 0 and 1
+        double priority = 102;
+
+        /// Queue length in bytes. The overall Tassiulas and Ephremides perspective, generalized
+        // as the "backpressure routing" approach to wireless networking tells us that queue
+        // lengths are critical in distributed network management and the fair sharing of resources
+        // in wireless systems by the means of decentralized decisions.
+        int32 queue_length = 103;
+    }
+}
+
+// ------------------------------------------------------------------------------------------------
+// Observation section: the following messages are all types of observations
+//
+
+/// An Observation is something that can be directly viewed by a node or network. This may be
+// something like the current position information a node is seeing, or the power spectral density
+// a node saw at a specific point over a particular time range. Observations are optionally tied
+// to a location or a specific node in a network.
+message Observation // abstract top level class
+{
+    Location location = 1; /// optional field used to specify the location of the observation
+    int32 node_id  = 2; /// optional field used to specify the node id of the observer
+
+    /// only one of these fields can be filled out per individual Observation message
+    oneof payload
+    {
+        PSD psd = 100; /// See the PSD documentation
+        Spectrogram spectrogram = 101; /// See the Spectrogram documentation
+        Node_Locations node_locations = 102; /// See the Node_Locations documentation
+    }
+}
+
+/// a Power Spectral Density defines a trace of power vs frequency.
+message PSD
+{
+    /// express the observed power spectral density as a sequence of
+    // power values in dBm/Hz, with the first value in the power_density
+    // sequence corresponding to start_hz
+    repeated double power_density_dbm_hz = 1;
+
+    /// frequency in Hz associated with the first value in the power_density_dbm_hz sequence
+    double start_hz = 2;
+
+    /// difference in frequency in Hz between each value in the power_density_dbm_hz sequence
+    double step_hz = 3;
+
+    /// the duration in picoseconds over which this PSD was calculated
+    int64 duration_ps = 4;
+}
+
+/// a spectrogram defines a rectangular surface of time vs frequency vs power.
+message Spectrogram
+{
+    /// Each PSD represents one time slice of the spectrogram.
+    // The first slice represents time zero of the spectrogram.
+    // It is assumed that each PSD in the spectrogram uses the same frequency limits.
+    // It is assumed each PSD in the spectrogram has the same duration.
+    // The time duration covered by the spectrogram is assumed to be
+    // (number of PSD slices) * ( duration_ps of the first PSD slice).
+    // Start_hz, step_hz, and duration_ps must be defined for the first PSD slice.
+    repeated PSD psd = 1;
+}
+
+/// Mapping of node ID to location for some number of nodes in a network
+message Node_Locations
+{
+    /// maps node ID to a location
+    map<int32, Location> node_locations = 1;
+}
+
+// ------------------------------------------------------------------------------------------------
+// Capability section: the following messages are all types of capabilities
+//
+
+/// A Capability is something that describes how a CIR network is able to operate. This may be
+// something like description of PHY layer configurability, or information on MAC type. It is
+// assumed to be used for describing the totality of a CIR capability, as opposed to what is
+// the exact current configuration of that capability (the requesting of which is handled under
+// a different message type).
+message Capability // abstract top level class
+{
+    /// only one of these fields can be filled out per individual Capability message
+    oneof payload 
+    {
+        Channelization channelization = 100; /// See the Channelization documentation
+        Framing framing = 101; /// See the Framing documentation
+        int32 number_of_antennas = 102; /// Number of antennas available to a node
+        ModulationScheme modulation_scheme = 103; /// Modulation Schemes supported by a node
+    }
+}
+
+/// the Channelization data type defines the flexibility of the RR's frequency usage within a CIRN
+message Channelization
+{
+    /// state the minimum and maximum bandwidth possible for a single channel
+    // if a CIRN has a morphological waveform that can use anywhere from 1Hz to the full
+    // available analog bandwidth (here assumed to be 80MHz), then min_bw would be 1 and
+    // max_bw would be 8e7 (units assumed to be in Hz).
+    int64 min_chan_bw_hz = 1;
+    int64 max_chan_bw_hz = 2;
+
+    /// state whether the CIRN operates across multiple channels and how many
+    // if single-channel, then min = max = 1.
+    int32 min_chans = 3;
+    int32 max_chans = 4;
+
+    /// boolean for whether the CIRN uses static frequency center(s).
+    bool static_fcs = 5;
+
+    /// boolean for whether or not channels will always be grouped together in a contiguous band
+    bool is_contiguous = 6;
+}
+
+/// Modulation Scheme defines the particular modulation being used by a node
+message ModulationScheme
+{
+    enum ModulationType
+    {
+        ///Not yet defined
+        UNKNOWN = 0;
+
+        ///Phase Shift Keying Types
+        BPSK = 1; /// binary phase-shift keying
+        QPSK = 2; /// quadrature phase-shift keying
+        DPSK = 3; /// differential phase-shift keying
+        DQPSK = 4; /// differential quadrature phase-shift keying
+
+        ///Frequency, Continous, OFDM types
+        FSK = 5; /// frequency-shift keying
+        CPM = 6; /// continuous phase modulation
+        OFDM = 7; /// orthogonal frequency division multiplexing
+
+        ///Spread Spectrum Types
+        DSSS = 8; /// direct-sequence spread spectrum
+        CSS = 9; /// chip spread spectrum
+        FHSS = 10; /// frequency-hopping spread spectrum
+    }
+    ModulationType modulation_type = 1;
+}
+
+/// the framing a CIRN uses provides information about its ability to control time usage
+message Framing
+{
+    /// boolean for whether the CIRN uses a statically defined frame structure
+    bool is_static = 1;
+
+    /// optional field for specifying the frame duration (in ps), unless the CIRN has a static
+    // frame time (as specified by is_static, above), it is expected this value would likely be
+    // not defined in any initial declarative form of the message, but would be present in response
+    // to query messages where the current frame_duration is requested.
+    int64 frame_duration_ps = 2;
+
+    /// optional field for specifying the relative time offset of the start of the CIRNs frame
+    // from the NTP's second timehack
+    int64 frame_ref_toNTP_ps = 3;
+
+    /// optional field for specifying the finer grained timing structure of the CIRNs PHY/MAC.
+    // unless the frame is static (again as described above) for all time, it is expected this
+    // field would not be defined in any initial declaritive form of he message, but would be
+    // present in response to query messages where the current slot structure is requested.
+    // The sum of these durations should equal the current frame_duration (if requested).
+    repeated int64 slot_durations_ps = 4;
+}
+
+// ------------------------------------------------------------------------------------------------
+// Impact section: the following messages are all types of impact
+//
+
+/// An impact message is a report to a competing team
+//  about how their transmissions effect the performance of my network.
+//  The purpose of impact statements is to enable other CIRNs
+//  to behave in a more considerate manner because they know how their
+//  behavior impacts me.  Note that these messages
+//  ignore node_id in MakeDeclaration since a competing team's behavior may
+//  have impact at multiple nodes in my network because of the broadcast
+//  nature of wireless signals.
+message Impact
+{
+    /// Indicates the possible contention that the given transmission by the competing team has on
+    // nodes/queues/links in my network
+    message TheoreticalContention
+    {
+        /// Indicates the estimated contention for a given transmission footprint that can be used
+        // by my node
+        message Shadow
+        {
+            /// My team's spectrum resource used for transmission
+            repeated SpectrumVoxel spectrum_voxel = 1;
+
+            /// Level of contention from 0 to 1. 0 having no contention for resource, 1 having
+            // complete contention for resource. Note that this may be caused by interference at
+            // the reciever at the other end of this link.
+            double contention_level = 2;
+        }
+
+        /// The ID of the node in my network that is impacted by the competing team's transmission
+        int32 my_node_id = 1;
+
+        /// The location of my node
+        Location my_node_location = 2;
+
+        /// The queue being serviced at this node potentially using the resources specified in
+        // shadows. Note that this is important because different queues at the same node,
+        // potentially using the same spectrum resource, may have different recievers and
+        // interference may be experienced differently at those recievers.
+        int32 my_queue_id = 3;
+
+        /// The impact of the competing team's transmission on the effectiveness of the different
+        // resources that may be used by the node/queue/link. Heterogenous radio technologies can
+        // imply imperfect orthogonalization of resources relative to each other. Consequently, the
+        // impact of a transmission that was intended to be in one channel can be felt even in
+        // different channels.
+        repeated Shadow shadows = 4;
+    }
+
+    /// ID of competitor network whose impact is being addressed
+    uint32 competitor_network_id = 1;
+
+    /// ID of transmitting node in competitor network, using competing network's naming convention
+    int32 competitor_node_id = 2;
+
+    /// Believed position of transmitting node in competitor network
+    Location competitor_node_location = 3;
+
+    /// ID of the transmitting network's queue serviced by this transmission, using competing
+    // network's queue naming convention. Can be useful if different queues utilize the given
+    // spectrum differently (eg. different modulation techniques or beamforming)
+    int32 competitor_queue_id = 4;
+
+    /// Spectrum of competing team's tranmitting node which may cause contention. Note that this
+    // should use how the competing team views their spectrum use.
+    repeated SpectrumVoxel competitor_spectrum = 5;
+
+    /// The estimated contention level impacts for a transmission by the competing network node
+    // using the given competitor_spectrum
+    repeated TheoreticalContention contention = 6;
+}
+
+//=================================================================================================
+// The following section contains the messages supporting informational exchanges 
+//=================================================================================================
+
+/// A Hello message is an initial peer-to-peer handshake that all networks must support
+message Hello
+{
+    /// A dialect is defined as a list of message IDs formatted as "0.1.2" strings that define the
+    // messages a network supports. The message IDs are based on field numbers. The top level
+    // Collaborate message is defined as field ID 0. Field 1 of a Collaborate message is a Hello
+    // message. Field 2 of a Hello message is an int32 my_network_id. Therefore including the
+    // string "0.1.2" in my_dialect would signal that the network supports the
+    // Collaborate.hello.my_network_id field.
+    repeated string my_dialect = 1;
+
+    /// include the network ID of the network that generated this message
+    uint32 my_network_id = 2;
+}
+
+///An Acknowledgement message to simply satisfy sender that its message has been recieved by the
+// intended reciever
+message Acknowledgement
+{
+    int32 ack_id = 1; /// statement id that this ack is acknowledging
+    uint32 my_network_id = 2; /// include the network ID of the network that generated this message
+}
+
+// ------------------------------------------------------------------------------------------------
+// Informational protocol: Declarative statements
+//
+
+/// Use this to cancel a previous declaration before it is due to expire.
+// No, you cannot issue an InvalidateMyDeclaration on an InvalidateMyDeclaration message.
+message InvalidateMyDeclaration
+{
+    /// ID of the statement to be cancelled.
+    // There is no support for a network to invalidate the statement
+    // of a different network.
+    int32 invalid_statement_id = 1;
+    uint32 my_network_id = 2; /// My Network ID.
+}
+
+/// Use this message to declare something to other networks.
+// Note that making a declaration with a mix of Demand, Resource, Performance, or
+// Observation objects implies there is a relationship between them.
+// For example, declaring a Demand along with a Resource would imply
+// the intent to use the specified Resource to service the specified Demand.
+message InformationalDeclaration
+{
+    /// included to allow networks to invalidate their own previous statements.
+    // Statement IDs must be unique within a single network.
+    int32 statement_id = 1;
+    uint32 my_network_id = 2; /// My Network ID.
+
+    /// For summarizing current location of nodes the network.  Used to link node_id in demand,
+    // performance, observation, impact, and payload messages
+    Node_Locations location_map = 6;
+
+    /// the time at which this statement is valid. Times in the past imply
+    // a relaying of historical or measured information.
+    // Times in the future imply an intent or a plan.
+    // A start time of zero implies "Now"
+    TimeStamp start_time = 3;
+
+    /// A duration of zero implies the statement applies to an instant in time.
+    // A duration of the max value of an int64 implies infinity.
+    int64 duration_ps = 4;
+
+    /// Indicates if the declaration is intended as an estimate of future behavior or if it is a
+    // report of what has actually occured.  This is a way to disambiguate in case of collaboration
+    // channel delays and CIRNs relative time offsets.
+    bool has_occured = 5;
+
+    /// mixing different classes implies that there is a relationship between the
+    // union of everything in the Declaration
+    repeated Demand demand = 100; /// See the Demand data type documentation
+    repeated Resource resource = 101; /// See the Resource data type documentation
+    repeated Performance performance = 102; /// See the Performance data type documentation
+    repeated Observation observation = 103; /// See the Observation data type documentation
+    repeated Capability capability = 104; /// See the Capability data type documentation
+
+    /// See the Impact data type documentation. An impact delcaration tells other networks how
+    // their actions effect the operations of the network making this declaration.
+    repeated Impact impact = 105;
+
+    ///See the Content data type documentation. To facilitate learning for PHY level collaboration
+    repeated Content payload = 106;
+
+    ///See the NodeLevelResourceUsage data type documentation.
+    repeated NodeLevelResourceUsage node_level_resource_usage = 107;
+}
+
+/// Use this message to describe the content of a particular transmission.
+message Content
+{
+    /// Transmitting node
+    int32 node_id = 1;
+
+    /// The time/frequency footprint of the signal
+    repeated SpectrumVoxel transmission_footprint = 2;
+
+    /// Transmission payload content in bytes. Knowledge of the payload can help bootstrap
+    // learning at the PHY level for advanced collaboration strategies. For example, by helping
+    // accellerate learning that could improve impact estimation.
+    bytes payload = 3;
+}
+
+// ------------------------------------------------------------------------------------------------
+// Information protocol: queries to ask for information
+//
+
+/// Use this message to query another network's demand.
+// You ask this in terms of the specific data structure you are interested in,
+// along with the starting time and duration of your time period of interest. You may also
+// specify a source and/or destination node if you are interested in a specific flow
+message DemandQuery
+{
+    /// Which specific demand metrics are you interested in?
+    // The demand fields are specified similarly to how the Hello message is formatted.
+    // The Demand message is assumed to be the root message.
+    // For example, to query Demand.latency, the demand_fields entry would be "101"
+    repeated string demand_fields = 1;
+
+    // you may optionally query a network's demand by source node,
+    // destination node, or source/destination pair
+
+    /// source node for the traffic associated with the demand
+    int32 source_node = 2;
+
+    /// destination node for the traffic associated with the demand
+    int32 destination_node = 3;
+}
+
+/// Use this message to query another network's Resource Use.
+// You query this in terms of the specific data structure you are interested in,
+// along with the starting time and duration of your time period of interest.
+message ResourceUseQuery
+{
+    /// Which specific resources are you interested in?
+    // The resource fields are specified similarly to how the Hello message is formatted.
+    // The Resource message is assumed to be the root message.
+    // For example, to query a fully specified Resource.spectrum_voxel, the resource_fields entry
+    // would be "100.1", "100.2", "100.3", "100.4", "100.5"
+    repeated string resource_fields = 1;
+}
+
+/// Use this message to query another network's Performance.
+// You query this in terms of the specific data structure you are interested in,
+// along with the starting time and duration of your time period of interest. You may also
+// specify a source and/or destination node if you are interested in a specific flow
+message PerformanceQuery
+{
+    /// Which specific performance metrics are you interested in?
+    // The performance fields are specified similarly to how the Hello message is formatted.
+    // The Performance message is assumed to be the root message.
+    // For example, to query Performance.scalar_performance, the performance_fields entry
+    // would be "100"
+    repeated string performance_fields = 1;
+
+    // you may optionally query a network's performance by source node,
+    // destination node, or source/destination pair
+
+    /// source node for the traffic associated with the demand
+    int32 source_node = 2;
+
+    /// destination node for the traffic associated with the demand
+    int32 destination_node = 3;
+}
+
+/// Use this message to ask another team how a proposed transmission method/channel/location could
+// impact their network. They can tell you without you asking but this indicates that perhaps there
+// is reason to believe that this might have changed.
+message ImpactQuery
+{
+    int32 my_node_id = 1; /// The node at which the given spectrum footprint will be used
+    Location my_node_location = 2; /// Location of transmitting node in my network
+
+    /// The queue serviced by this transmission. Used if different queues utilize the given
+    // spectrum differently (eg. different modulation techniques or queue-specific beamforming)
+    int32 my_queue_id = 3;
+
+    /// included to allow networks to politely deny requests, must be unique within a single
+    // network.
+    int32 request_id = 4;
+
+    /// Proposed spectrum resource to be used by the given node which may cause contention to
+    // other networks
+    repeated SpectrumVoxel spectrum = 5;
+}
+
+/// Use this message to ask for results of observations by another network.
+// You request this in terms of the specific data structure you are interested in,
+// along with the starting time and duration of your time period of interest. You can
+// also specify either the location or node_id of the observation point.
+message ObservationQuery
+{
+    /// Which specific observations are you interested in?
+    // The observation fields are specified similarly to how the Hello message is formatted.
+    // The Observation message is assumed to be the root message. 
+    // For example, to query Observation.node_locations, the observation_fields entry
+    // would be "102.1"
+    repeated string observation_fields = 1;
+
+    /// optional field used to specify the location of the observation
+    Location location = 4;
+
+    /// optional field used to specify the node id of the observer
+    int32 node_id  = 5;
+
+    /// optional field used to specify the frequency range and time granularity of when a PSD is
+    /// queried. Also specifies the parameters of the component PSDs when the query is for a
+    ///  spectrogram. Subfield power_density_dbm_hz is ignored by the receiver
+    PSD psd_parameters = 6;
+}
+
+/// Use this message to ask for detailed information about another networks current configuration
+// within its capability set. Optionally, you can specify the location or node_id where
+// you are interested in understanding the currently configured capability.
+message CapabilityUseQuery
+{
+    /// which capability types are you interested in?
+    // The capability fields are specified similarly to how the Hello message is formatted.
+    // The Capability message is assumed to be the root message. 
+    // For example, to query Capability.number_of_antennas, the capability_fields entry would be
+    // "102"
+    repeated string capability_fields = 1;
+
+    /// optional field used to specify the location of the node if interested in a specific
+    // node
+    Location location = 4;
+
+    /// optional field used to specify the node id if interested in a specific node
+    int32 node_id  = 5;
+
+    /// if request_overall_capability is True, it means another CIRN is requesting a CIRN's
+    // overall capability, not the specific usage
+    bool request_overall_capability = 6;
+}
+
+/// Use this message to ask another network for some information.
+// Note that sending a query with a mix of different classes implies that there is a relationship
+// between the union of everything in the InformationalQuery
+message InformationalQuery
+{
+    /// included to allow other networks to politely decline to fulfill a query.
+    // Statement IDs must be unique within a single network.
+    int32 query_id = 1;
+    uint32 my_network_id = 2; /// My Network ID.
+
+    /// the time at which this statement is valid. Times in the past imply
+    // a relaying of historical or measured information.
+    // Times in the future imply an intent or a plan.
+    // A start time of zero implies "Now"
+    TimeStamp start_time = 3;
+
+    /// A duration of zero implies the statement applies to an instant in time.
+    // A duration of the max value of an int64 implies infinity.
+    int64 duration_ps = 4;
+
+    /// mixing different classes implies that there is a relationship between the
+    // union of everything in the InformationalQuery
+
+    /// See the DemandQuery data type documentation
+    repeated DemandQuery demand_query = 100;
+
+    /// See the ResourceUseQuery data type documentation
+    repeated ResourceUseQuery resource_use_query = 101;
+
+    /// See the PerformanceQuery data type documentation
+    repeated PerformanceQuery performance_query = 102;
+
+    /// See the ObservationQuery data type documentation
+    repeated ObservationQuery observation_query = 103;
+
+    /// See the CapabilityUseQuery data type documentation
+    repeated CapabilityUseQuery capability_use_query = 104;
+
+    /// See the ImpactQuery data type documentation
+    repeated ImpactQuery impact_query = 105;
+}
+
+/// Use this message to let another network know that you will not be answering their query
+// A future version of this message type might include reason types
+message QueryDenied
+{
+    /// ID of the query being denied.
+    int32 denied_query_id = 1;
+    uint32 querying_network_id = 2; /// ID of the network which initiated the query
+    uint32 my_network_id = 3; /// My Network ID.
+}
+
+//=================================================================================================
+// The following section contains the messages supporting conversational exchanges 
+//=================================================================================================
+
+/// A Clause a subcomponent of a proposal linking actors to actions, observations, or performance
+message Clause
+{
+    uint32 network_id = 2; /// What Network ID does this clause pertain to?
+    
+    /// most likely only useful when the clause pertains to the network that is making it
+    repeated Demand demand = 100;
+
+    /// what resources does this proposal intend to use?
+    repeated Resource resource = 101;
+
+    /// what sort of performance does this proposal expect to achieve?
+    repeated Performance performance = 102;
+
+    /// Is this proposal include one network asking information from another, ie Observations?
+    repeated InformationalQuery informational_query = 104;
+
+    /// what sort of capabilities are involved in this clause?
+    repeated Capability capability = 105;
+}
+
+message Request
+{
+    int32 statement_id = 1; ///Allow other messages to reference this proposal
+    int32 conversation_id = 2; ///Allow other messages to reference this conversation
+
+    repeated Clause clauses = 3; /// what is the proposal?
+}
+
+message Counter
+{
+    int32 statement_id = 1; /// Allow other messages to reference this message
+    int32 conversation_id = 2; /// Tracks which conversation this message belongs to
+    int32 request_id = 3; /// What Request or Counter statement_id is this counter-proposing to?
+
+    repeated Clause clauses = 4;  /// the counter-proposal
+}
+
+/// All initial negotiations are complete. Now go on to the next phase where all networks fulfill
+// their obligations
+message Agree
+{
+    int32 statement_id = 1; /// Allow other messages to reference this message
+    int32 conversation_id = 2; /// Tracks which conversation this message belongs to
+    int32 request_id = 3; /// What Request or Counter statement_id is this referencing?
+}
+
+/// A network will Claim that its obligations for a given proposal have been satisfied
+message Claim
+{
+    int32 statement_id = 1; /// Allow other messages to reference this message
+    int32 conversation_id = 2; /// Tracks which conversation this message belongs to
+    int32 agree_id = 3; /// What Agree statement is this referencing?
+
+    /// optionally include details about why a network believes it has satisfied the Promise
+    repeated Clause clauses = 100;
+
+    /// optionally include actual observations
+    repeated Observation observation = 101;
+}
+
+/// The originating network will confirm or deny that a network's obligations have been fulfilled
+// by sending a Confirm statement
+message Confirm
+{
+    int32 statement_id = 1; /// Allow other messages to reference this message
+    int32 conversation_id = 2; /// Tracks which conversation this message belongs to
+    int32 claim_id = 3; /// What Claim statement is this referencing?
+
+    bool confirm_success = 4; /// Does this network agree with the claim?
+
+    /// optionally include details about why a network believes a Claim is true or false
+    repeated Clause clauses = 100;
+
+    /// optionally include actual observations
+    repeated Observation observation = 101;
+}
+
+// this incorporates all the capabilities of Reject, Withdraw, and Renege.
+// All these result in a terminal condition with the network that generates the message
+// signalling that it is walking away from the current conversation
+message Withdraw
+{
+    /// This specifies the conversation for which a network is backing out of
+    int32 conversation_id = 1;
+}
+
+// This message is used to bid for resources.
+message ResourceBid
+{
+    /// Allows others to reference this bid
+    int32 statement_id = 1;
+    int32 network_id = 2;
+    double bid_time_interval_T_ms = 3; // Period over which you will spend your bid budget.
+    int32 interval_bid_budget_B = 4; // Budget you have to spend over entire interval of time.
+    double current_bid_timestamp = 5; // Gateway timestamp of local time.
+    int32 current_bid = 6; // Amount you are bidding for this interval.
+}
+
+
+//=================================================================================================
+// The following section contains the top level wrapper message
+//=================================================================================================
+
+/// The Collaborate message is a simple wrapper that allows users to determine the type of message
+// they just received. Every message to be sent to another network must be encapsulated in a
+// Collaborate message
+message Collaborate
+{
+    reserved 3 to 9;
+
+    oneof payload
+    {
+        /// See Hello documentation
+        Hello hello = 1;
+
+        /// See InvalidateMyDeclaration documentation
+        InvalidateMyDeclaration invalidate_my_declaration = 2;
+
+        /// See InformationalDeclaration documentation
+        InformationalDeclaration informational_declaration = 10;
+
+        /// See InformationalQuery documentation
+        InformationalQuery informational_query = 11;
+
+        /// See QueryDenied documentation
+        QueryDenied query_denied = 12;
+
+        /// See Request documentation
+        Request request = 13;
+
+        /// See Counter documentation
+        Counter counter = 14;
+
+        /// See Agree documentation
+        Agree agree = 15;
+
+        /// See Claim documentation
+        Claim claim = 16;
+
+        /// See Confirm documentation
+        Confirm confirm = 17;
+
+        /// See Withdraw documentation
+        Withdraw withdraw = 18;
+    }
+}

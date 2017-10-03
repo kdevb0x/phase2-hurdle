@@ -1,0 +1,51 @@
+<?xml version="1.0"?>
+<block>
+  <name>env_sink</name>
+  <key>envsim_env_sink</key>
+  <category>[envsim]</category>
+  <import>import envsim</import>
+  <make>envsim.env_sink($event_name,
+                                $max_block_size,
+                                $schedule_offset,
+                                $sample_rate,
+                                $tx_pkt_len_name)
+  </make>
+  <param>
+    <name>Event Name</name>
+    <key>event_name</key>
+    <value>tx_burst</value>
+    <type>string</type>
+  </param>
+  <param>
+    <name>Max Block Size</name>
+    <key>max_block_size</key>
+    <value>2048</value>
+    <type>int</type>
+  </param>
+  <param>
+    <name>Schedule Offset ps</name>
+    <key>schedule_offset</key>
+    <value>0</value>
+    <type>int</type>
+  </param>
+  <param>
+    <name>Sample Rate</name>
+    <key>sample_rate</key>
+    <value>samp_rate</value>
+    <type>float</type>
+  </param>
+  <param>
+    <name>TX Packet Length Tag</name>
+    <key>tx_pkt_len_name</key>
+    <value>tx_pkt_len</value>
+    <type>string</type>
+  </param>
+  <sink>
+    <name>in</name>
+    <type>complex</type>
+  </sink>
+   <source>
+    <name>event</name>
+    <type>message</type>
+  </source>
+</block>

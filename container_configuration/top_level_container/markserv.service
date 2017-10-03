@@ -1,0 +1,10 @@
+[Unit]
+Description=Run markserv markdown server as a service
+
+[Service]
+#Environment= MY_ENVIRONMENT_VAR =/path/to/file.config
+WorkingDirectory=/root/phase2-hurdle/
+ExecStart=/usr/local/bin/markserv
+
+[Install]
+WantedBy=multi-user.target

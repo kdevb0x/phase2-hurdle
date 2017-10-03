@@ -1,0 +1,9 @@
+[Unit]
+Description=Run Collaboration Server as a service
+
+[Service]
+WorkingDirectory=/root/phase2-hurdles/collab_protocol/python
+ExecStart=/usr/bin/python2 /root/phase2-hurdles/collab_protocol/python/collab_server.py --server-ip=172.30.101.1 --server-port=5556 --client-port=5557
+
+[Install]
+WantedBy=multi-user.target

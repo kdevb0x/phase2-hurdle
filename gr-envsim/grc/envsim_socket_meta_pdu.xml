@@ -1,0 +1,76 @@
+<?xml version="1.0"?>
+<block>
+  <name>socket_meta_pdu</name>
+  <key>envsim_socket_meta_pdu</key>
+  <category>[envsim]</category>
+  <import>import envsim</import>
+  <make>envsim.socket_meta_pdu($type, $host, $port, $mtu, $tcp_no_delay)</make>
+  <param>
+    <name>Type</name>
+    <key>type</key>
+    <value>UDP_SERVER</value>
+    <type>enum</type>
+    <option>
+      <name>UDP Server</name>
+      <key>"UDP_SERVER"</key>
+    </option>
+    <option>
+      <name>UDP Client</name>
+      <key>"UDP_CLIENT"</key>
+    </option>
+  </param>
+  <param>
+    <name>Host</name>
+    <key>host</key>
+    <value></value>
+    <type>string</type>
+  </param>
+  <param>
+    <name>Port</name>
+    <key>port</key>
+    <value>52001</value>
+    <type>string</type>
+  </param>
+  <param>
+    <name>MTU</name>
+    <key>mtu</key>
+    <value>10000</value>
+    <type>int</type>
+  </param>
+  <param>
+    <name>TCP No Delay</name>
+    <key>tcp_no_delay</key>
+    <value>False</value>
+    <type>enum</type>
+    <hide>
+#if (($type() == '"TCP_CLIENT"') or ($type() == '"TCP_SERVER"'))
+#if (str($tcp_no_delay()) == 'False')
+part
+#else
+none
+#end if
+#else
+all
+#end if
+</hide>
+    <option>
+      <name>Enabled</name>
+      <key>True</key>
+    </option>
+    <option>
+      <name>Disabled</name>
+      <key>False</key>
+    </option>
+  </param>
+  <sink>
+    <name>pdus</name>
+    <type>message</type>
+    <optional>1</optional>
+  </sink>
+  <source>
+    <name>pdus</name>
+    <type>message</type>
+    <optional>1</optional>
+  </source>
+  <doc>For server modes, leave Host blank to bind to all interfaces (equivalent to 0.0.0.0).</doc>
+</block>
