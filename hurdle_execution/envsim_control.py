@@ -35,7 +35,7 @@ def main():
     parser_start.add_argument("--noise-amp", type=float, default=0.001,
                               help="amplitude of the environment simulator background noise")
 
-    parser_start.add_argument("--envsim-config-file", default="/root/phase2-hurdles/gr-envsim/apps/envsim.ini",
+    parser_start.add_argument("--envsim-config-file", default="/root/phase2-hurdle/gr-envsim/apps/envsim.ini",
                               help="This should be set to where the envsim service expect to find its config file")
 
     parser_start.add_argument("--usrp-ip-prefix", default="192.168.40.",

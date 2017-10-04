@@ -2,18 +2,18 @@
 https://spectrumcollaborationchallenge.com
 
 # Overview
-This document will complement the [SC2 Phase 2 Hurdle Problem Description](https://spectrumcollaborationchallenge.com/wp-content/uploads/Phase-2-Hurdle-Problem-Description.pdf) by describing how to build, test, and submit solutions to the Phase 2 Entrance Hurdle. 
+This document will complement the [SC2 Phase 2 Hurdle Problem Description](https://spectrumcollaborationchallenge.com/wp-content/uploads/Phase-2-Hurdle-Problem-Description.pdf) by describing how to build, test, and submit solutions to the Phase 2 Entrance Hurdle.
 
-The Phase 2 Hurdle framework is a simplified emulation of the SC2 Colosseum, consisting of a single LXC container incorporating an RF environment simulator, IP traffic generators, multiple independent IP networks, and automated hurdle execution scripts. 
+The Phase 2 Hurdle framework is a simplified emulation of the SC2 Colosseum, consisting of a single LXC container incorporating an RF environment simulator, IP traffic generators, multiple independent IP networks, and automated hurdle execution scripts.
 
 ![phase2_hurdle_design](resources/phase2_hurdle_design.png)
 
-Team solutions must run in their own LXC container and interact with the Phase 2 Hurdle framework via network and Radio API interfaces. Teams will upload their solutions to team-specific buckets on Amazon S3 for official evaluation runs. Teams may download the Phase 2 Hurdle framework for local development and testing prior to uploading their solution for an official evaluation run. 
+Team solutions must run in their own LXC container and interact with the Phase 2 Hurdle framework via network and Radio API interfaces. Teams will upload their solutions to team-specific buckets on Amazon S3 for official evaluation runs. Teams may download the Phase 2 Hurdle framework for local development and testing prior to uploading their solution for an official evaluation run.
 
-Links to detailed specifications on the Phase 2 Hurdle framework can be found at the end of this document. 
+Links to detailed specifications on the Phase 2 Hurdle framework can be found at the end of this document.
 
 The following sections will explain how to download the DARPA Spectrum Collaboration Challenge Phase 2
-Hurdle framework, incorporate and test solutions locally, and submit solutions for scoring. 
+Hurdle framework, incorporate and test solutions locally, and submit solutions for scoring.
 
 # Table of Contents
 1. [Obtaining the Phase 2 Hurdle Framework](#obtaining-the-phase-2-hurdle-framework)
@@ -24,7 +24,7 @@ Hurdle framework, incorporate and test solutions locally, and submit solutions f
 6. [Running the Hurdle](#running-the-hurdle)
 7. [Uploading a Hurdle Solution for Official Evaluation](#uploading-a-hurdle-solution-for-official-evaluation)
 8. [Resources](#resources)
-    
+
 
 ## Obtaining the Phase 2 Hurdle Framework
 Teams are strongly encouraged to download the prebuilt Bot and Phase 2 Hurdle images hosted on GitHub rather than attempting to build and configure it from scratch using the code in this repository. This will ensure that all teams start from a known working baseline and will make any required updates much less error prone. The latest version of all containers can always be found at https://github.com/SpectrumCollaborationChallenge/phase2-hurdle/releases/latest
@@ -33,7 +33,7 @@ Teams are strongly encouraged to download the prebuilt Bot and Phase 2 Hurdle im
 All teams must fill out the DARPA Spectrum Collaboration Challenge Phase 2 Long Form ( https://spectrumcollaborationchallenge.com/register-for-phase-2-open-track/ ) to sign up for Phase 2 and be granted credentials to upload their Phase 2 Hurdle solutions to S3.
 
 Once teams submit the long form, they will receive an automated confirmation email. Prior to the beginning of the solution submission window, the Spectrum Collaboration Challenge team will generate S3 credentials for each team to use to upload Phase 2 Hurdle solutions to a dedicated bucket on Amazon S3.
- 
+
 ### Downloading From GitHub
 The Phase 2 Hurdle images are stored on GitHub and are split into multiple images to permit independent updates. Any time there is an update to the Phase 2 Hurdle images, the Spectrum Collaboration Challenge team will create a new release with the updated files. Teams may set up GitHub accounts to automatically notify them of any updates to the repository at https://github.com/SpectrumCollaborationChallenge/phase2-hurdle.
 
@@ -48,7 +48,7 @@ See the table below for a description of the files available for download:
 
 
 #### phase2Hurdle-vX-X.tar.gz
-This image contains all the Phase 2 Hurdle infrastructure code and is used to execute the hurdle. The other images will end up being installed into this top level container. 
+This image contains all the Phase 2 Hurdle infrastructure code and is used to execute the hurdle. The other images will end up being installed into this top level container.
 
 #### darpa-practice-srn-base-vX-X.tar.gz
 This image contains the practice version of the bots which teams can use during their initial development.
@@ -59,7 +59,7 @@ This image contains the hurdle version of the bots which teams will use to valid
 #### competitor-base-vX.X.tar.gz
 This image is running Ubuntu 14.04 and has several hurdle dependencies preinstalled. Competitors are encouraged to use this as the basis for their solutions. This image includes GNU Radio, code to interface with the RF Environment simulator, and a skeleton of the files used in the Radio API.
 
-These instructions will assume that teams have downloaded the Phase 2 Hurdle image version 1.0 and the Practice bot image version 1.0 to their local directory as ~/phase2Hurdle-v1-0.tar.gz and darpa-practice-srn-base-v1-0.tar.gz. These instructions will also walk through how to install the latest bot image to the Phase 2 Hurdle container.
+These instructions will assume that teams have downloaded the Phase 2 Hurdle image version 1.0 and the Practice bot image version 1.0 to their local directory as ~/phase2Hurdle-v1-0-0.tar.gz and darpa-practice-srn-base-v1-0-0.tar.gz. These instructions will also walk through how to install the latest bot image to the Phase 2 Hurdle container.
 
 ## Preparing a Host to run the Hurdle
 Teams must install a recent version of LXD to a Linux host and modify some default settings to run the Phase 2 Hurdle framework successfully. Teams must then import and launch the Phase 2 Hurdle container to begin developing and testing solutions locally.
@@ -67,7 +67,7 @@ Teams must install a recent version of LXD to a Linux host and modify some defau
 ### System Requirements
 The Phase 2 Hurdle is very computationally intensive, as it will run 3 instances of your solution, 3 instances of an interactive radio bot, 6 traffic generators, and an RF environment simulator.
 
-These instructions have been validated on systems running Ubuntu 16.04 64 bit and Ubuntu 14.04 64bit. For reference, the final evaluation will be run on an Amazon EC2 instance with specifications to be released along with the Hurdle Bots at a later date. 
+These instructions have been validated on systems running Ubuntu 16.04 64 bit and Ubuntu 14.04 64bit. For reference, the final evaluation will be run on an Amazon EC2 instance with specifications to be released along with the Hurdle Bots at a later date.
 
 ### Installing LXD
 The Phase 2 Hurdle Framework uses LXC containers managed by the LXD daemon. These instructions require that you use a version of LXD at least as recent as 2.16. To get the most recent version stable of LXD, add the Ubuntu Containers Team PPA to your Ubuntu 16 package manager:
@@ -77,7 +77,7 @@ sudo add-apt-repository ppa:ubuntu-lxc/lxd-stable
 sudo apt-get update
 ```
 
-Install and initialize the most recent stable version of LXD with: 
+Install and initialize the most recent stable version of LXD with:
 
 ```bash
 sudo apt install lxd
@@ -87,9 +87,9 @@ sudo lxd init
 ### Modifying System Configuration Files
 The Phase 2 Hurdle container and the set of nested containers inside all run in unprivileged mode. LXD will map all the user IDs and group IDs used inside the containers to an offset range of IDs in the host. The range of values used for this ID mapping is controlled by the /etc/subuid and /etc/subgid files.
 
-Linux systems assume they will have access to at least 65536 unique user IDs and group IDs to work properly. The standard LXD configuration provides subcontainers with a range of user IDs and group IDs starting at either 100000 or 165536 and spanning 65536 IDs, as seen in the root and lxd entries in /etc/subuid and /etc/subgid. 
+Linux systems assume they will have access to at least 65536 unique user IDs and group IDs to work properly. The standard LXD configuration provides subcontainers with a range of user IDs and group IDs starting at either 100000 or 165536 and spanning 65536 IDs, as seen in the root and lxd entries in /etc/subuid and /etc/subgid.
 
-That is sufficient for a single layer of containers, but is a problem for nested containers as used in the Phase 2 Hurdle framework. As this framework uses two layers of containers, the top level container will need at least 2 x 65536 IDs. To enable this, edit the /etc/subgid and /etc/subuid files on your host. The following commands will make a backup copy of each file in your user's home directory, remove the root and lxd entries in each file, and update the entries with the necessary values. 
+That is sufficient for a single layer of containers, but is a problem for nested containers as used in the Phase 2 Hurdle framework. As this framework uses two layers of containers, the top level container will need at least 2 x 65536 IDs. To enable this, edit the /etc/subgid and /etc/subuid files on your host. The following commands will make a backup copy of each file in your user's home directory, remove the root and lxd entries in each file, and update the entries with the necessary values.
 
 Make a copy of the files in your home directory with:
 
@@ -98,7 +98,7 @@ cp /etc/subuid ~/subuid.old
 cp /etc/subgid ~/subgid.old
 ```
 
-Next replace the original root and lxd entries in each file. 
+Next replace the original root and lxd entries in each file.
 
 ```bash
 sudo -s
@@ -138,7 +138,7 @@ You can confirm the import was successful by running:
 lxc image list
 ```
 
-You should see phase2Hurdle as one of the entries in that list. 
+You should see phase2Hurdle as one of the entries in that list.
 
 Now launch an instance of the phase2Hurdle container and name it phase2Hurdle by running
 
@@ -171,11 +171,11 @@ lxc exec phase2Hurdle bash
 This will get you a root terminal session to the phase2Hurdle container without requiring you to log in. From that root terminal in the phase2Hurdle container, run:
 
 ```bash
-cd /root/phase2-hurdles/container_configuration/
+cd /root/phase2-hurdle/container_configuration/
 ./hurdle_traffic_initialization.sh
 ```
 
-This will initialize and configure 6 traffic generator containers, named tgen1 through tgen6. 
+This will initialize and configure 6 traffic generator containers, named tgen1 through tgen6.
 
 When this command is complete, verify that you see all of these containers by running the following command from the root terminal in the phase2Hurdle container:
 
@@ -207,11 +207,11 @@ You should see something similar to:
 These commands must be run every time there is an update to the bots. These commands will push the new image file into the phase2Hurdle container, remove the existing bots, and install the new bot version. This will allow
 you to independently update practice bots and hurdle bots.
 
-You can move files into the phase2Hurdle container using LXD commands. To copy the darpa-practice-srn-base-v1-0.tar.gz file into
+You can move files into the phase2Hurdle container using LXD commands. To copy the darpa-practice-srn-base-v1-0-0.tar.gz file into
 the phase2Hurdle container, run the following command on your host:
 
 ```bash
-lxc file push darpa-practice-srn-base-v1-0.tar.gz phase2Hurdle/share/nas/competitor/images/
+lxc file push darpa-practice-srn-base-v1-0-0.tar.gz phase2Hurdle/share/nas/competitor/images/
 ```
 
 This copies the file from the host and puts it in the /share/nas/competitor/images/ directory of the
@@ -231,10 +231,10 @@ Next run:
 
 ```bash
 cd /root/phase2-hurdle/container_configuration/bot_containers
-./configure_bots.py --bot-type=practice --image-name=darpa-practice-srn-base-v1-0.tar.gz
+./configure_bots.py --bot-type=practice --image-name=darpa-practice-srn-base-v1-0-0.tar.gz
 ```
 
-This will remove any prexisting "practice" containers, import the darpa-practice-srn-base-v1-0.tar.gz image from /share/nas/competitor/images/, and configure 3 instances of the new practice bot version.
+This will remove any prexisting "practice" containers, import the darpa-practice-srn-base-v1-0-0.tar.gz image from /share/nas/competitor/images/, and configure 3 instances of the new practice bot version.
 
 When this command is complete, verify that you see all of these containers by running the following command from the root terminal in the phase2Hurdle container:
 
@@ -274,7 +274,7 @@ Confirm that the containers are based on the correct image by running:
 lxc config get darpa-practice-srn1 volatile.base_image
 ```
 
-This will output the full fingerprint of the container's base image. Compare the start of this 
+This will output the full fingerprint of the container's base image. Compare the start of this
 fingerprint against the fingerprint shown next to the appropriate image version when you run:
 
 ```bash
@@ -295,7 +295,7 @@ You'll see something similar to the following:
 +------------------------------+--------------+--------+-------------------------------------------------+--------+-----------+-------------------------------+
 ```
 
-You can cross reference the alias and fingerprint for the practice bot against the Versions.md text file available at 
+You can cross reference the alias and fingerprint for the practice bot against the Versions.md text file available at
 https://github.com/SpectrumCollaborationChallenge/phase2-hurdle/releases/latest
 
 ## Testing the Hurdle Configuration
@@ -315,13 +315,13 @@ lxc image export dummy-image /share/nas/competitor/images/dummy-image.tar.gz
 Once the dummy container is in place, change to the hurdle execution folder and execute a test run of the hurdle. From the phase2Hurdle root terminal, run:
 
 ```bash
-cd /root/phase2-hurdles/hurdle_execution
+cd /root/phase2-hurdle/hurdle_execution
 ./run_hurdle.py --duration=60 --image-file=dummy-image.tar.gz --clean-competitor-containers
 ```
 
 This will run the hurdle for 60 seconds of evaluation time and remove all 3 instances of the dummy container when complete.
 
-The execution script will print out the commands that it is running as it runs the hurdle to assist you with any required debug. When the hurdle is complete, the script will shut down all containers and copy traffic logs for the three competitor nodes and three bot nodes to the /root/phase2-hurdles/hurdle_execution/ as MGEN logs ending in ".drc". If the "--clean-competitor-containers" flag is used, it will also remove the 3 competitor containers. Note that this will prevent you from inspecting any application specific logs in your containers after a hurdle run, so use this flag only if you have no interest in those logs. 
+The execution script will print out the commands that it is running as it runs the hurdle to assist you with any required debug. When the hurdle is complete, the script will shut down all containers and copy traffic logs for the three competitor nodes and three bot nodes to the /root/phase2-hurdle/hurdle_execution/ as MGEN logs ending in ".drc". If the "--clean-competitor-containers" flag is used, it will also remove the 3 competitor containers. Note that this will prevent you from inspecting any application specific logs in your containers after a hurdle run, so use this flag only if you have no interest in those logs.
 
 ### Inspecting the Results
 If the Phase 2 Hurdle container is working as expected, you should see three MGEN logs for the practice bot containers named darpa-practice-srn1_mgen_traffic_log.drc, darpa-practice-srn2_mgen_traffic_log.drc, and darpa-practice-srn3_mgen_traffic_log.drc
@@ -383,7 +383,7 @@ From your host use the following commands to log back in to the phase2Hurdle con
 
 ```bash
 lxc exec phase2Hurdle bash
-cd /root/phase2-hurdles/hurdle_execution
+cd /root/phase2-hurdle/hurdle_execution
 ./run_hurdle.py --duration=60 --image-file=competitor-image-1-0.tar.gz --clean-competitor-containers
 ```
 
@@ -391,9 +391,9 @@ For a detailed explanation of what the hurdle script does, please see the [Phase
 
 
 ### Hurdle Script Summary
-The Hurdle run script goes through the following steps every time it is executed: 
-1. Initialize and configure three instances of the image you've provided. Depending on the size of your image, this may take some time. 
-2. Initialize and configure three instances of the practice bot containers. 
+The Hurdle run script goes through the following steps every time it is executed:
+1. Initialize and configure three instances of the image you've provided. Depending on the size of your image, this may take some time.
+2. Initialize and configure three instances of the practice bot containers.
 3. Start all competitor, bot, and traffic generator containers.
 4. Start environment simulator.
 5. Start collaboration server.
@@ -404,10 +404,10 @@ The Hurdle run script goes through the following steps every time it is executed
 10. Tear everything down in reverse order
 11. Copy log files from each traffic generator to the hurdle_execution folder in the Phase 2 Hurdle container for easy access.
 
-See the [Phase 2 Hurdle Container Detailed Specification](Phase-2-Hurdle-Container-Detailed-Specification.md) for more information on how the Phase 2 Hurdle Container is configured and what the run_hurdle script does. 
+See the [Phase 2 Hurdle Container Detailed Specification](Phase-2-Hurdle-Container-Detailed-Specification.md) for more information on how the Phase 2 Hurdle Container is configured and what the run_hurdle script does.
 
 ### Inspecting the Results
-The Phase 2 Hurdle run script will copy log files from each of the bot and competitor containers to /root/phase2-hurdles/hurdle_execution in the phase2Hurdle container. For a run using the practice bots, you should see the following
+The Phase 2 Hurdle run script will copy log files from each of the bot and competitor containers to /root/phase2-hurdle/hurdle_execution in the phase2Hurdle container. For a run using the practice bots, you should see the following
 six files:
 
 * darpa-practice-srn1_mgen_traffic_log.drc
@@ -417,7 +417,7 @@ six files:
 * competitor-hurdle-srn5_mgen_traffic_log.drc
 * competitor-hurdle-srn6_mgen_traffic_log.drc
 
-Each of these files is an MGEN log. The three files starting with darpa-practice-srn are the bot 
+Each of these files is an MGEN log. The three files starting with darpa-practice-srn are the bot
 traffic logs and the three files starting with competitor-hurdle-srn are the log files from competitor
 containers. See the [MGEN Official Documentation](https://downloads.pf.itd.nrl.navy.mil/docs/mgen/mgen.html#_MGEN_Log_File) for specifics on how to interpret these log files.
 

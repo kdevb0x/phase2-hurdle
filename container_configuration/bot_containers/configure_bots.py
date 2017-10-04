@@ -20,6 +20,7 @@ NW_INTERFACE_CONFIG_DEST_PATH = "/etc/network/interfaces.d"
 PRACTICE_BOT_NAME_PATTERN = "darpa-practice-srn"
 HURDLE_BOT_NAME_PATTERN = "darpa-hurdle-srn"
 
+IMAGE_PATH = "/share/nas/competitor/images/"
 
 def update_inet_device_config_dict(dev_config_dict, name, address, parent, **kwargs):
     '''
@@ -117,8 +118,8 @@ def main():
     parser = argparse.ArgumentParser(prog="configure_bots",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument('--image-name', default="darpa-practice-srn-base-v1-0",
-                        help="The lxc image name we'll generate containers from")
+    parser.add_argument('--image-name', default="darpa-practice-srn-base-v1-0-0.tar.gz",
+                        help="The lxc image name we'll generate containers from, assumed to be in /share/nas/competitor/images/")
     parser.add_argument('--bot-type', choices=["practice", "hurdle"],
                         default="practice", help="What type of bot is this?")
     parser.add_argument('--num-containers', default=3, type=int,
@@ -147,32 +148,45 @@ def main():
         if name in bot_container_names:
             print("Existing bot container found, removing container {}".format(name))
 
-            cmd = ["lxc", "rm",] + name
+            cmd = ["lxc", "rm", name]
             run_subproc_and_print_output(cmd)
 
 
-    print("generating container list: {}".format(bot_container_names))
-
-    # TODO: Import image
 
 
-    # check if the image name we specified exists
+    # Import image
+    full_image_path = os.path.join(IMAGE_PATH, args["image_name"])
+
+    # strip off the .gz on the end of the image name
+    image_alias = os.path.splitext(args["image_name"])[0]
+
+    # strip off the remaining .tar on the end of the image name
+    image_alias = os.path.splitext(image_alias)[0]
+
+    print("Importing image alias {} from {}".format(image_alias, full_image_path))
+
+    cmd = ["lxc", "image", "import", full_image_path, "--alias", image_alias]
+    run_subproc_and_print_output(cmd)
+
+    # check if the image import was successful
     my_images = lxd_client.images.all()
     my_image_names = [alias["name"] for image in my_images for alias in image.aliases ]
 
     # if image name not found, list the images we know about and exit
-    if args["image_name"] not in my_image_names:
-        print("Image alias: {} not found. Check for typos.".format(args["image_name"]))
+    if image_alias not in my_image_names:
+        print("Image alias: {} not found. Check for typos.".format(image_alias))
         print("Here is the current list of known image aliases:")
         print(my_image_names)
         sys.exit(1)
+
+    print("generating container list: {}".format(bot_container_names))
 
     # stand up bots
     for i, cont_name in enumerate(bot_container_names):
 
         print("Creating {}".format(cont_name))
         config = {"name":cont_name,
-                "source":{"type":"image", "alias":args["image_name"]}}
+                "source":{"type":"image", "alias":image_alias}}
 
         container = lxd_client.containers.create(config, wait=True)
         container.config["security.nesting"] = "true"

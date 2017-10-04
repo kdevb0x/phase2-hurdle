@@ -27,106 +27,106 @@ help competitors understand the Phase 2 Hurdle infrastructure.
 
 ### Top Level Container ifconfig
 See below for example output of running ifconfig on the top level container. See the network map
-later in this document for more insight into what each interface is used for. 
+later in this document for more insight into what each interface is used for.
 
 ```text
-canbr0    Link encap:Ethernet  HWaddr ee:3c:1f:a3:58:3c  
+canbr0    Link encap:Ethernet  HWaddr ee:3c:1f:a3:58:3c
           inet addr:172.16.1.1  Bcast:0.0.0.0  Mask:255.255.0.0
           inet6 addr: fe80::ec3c:1fff:fea3:583c/64 Scope:Link
           UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
           RX packets:0 errors:0 dropped:0 overruns:0 frame:0
           TX packets:8 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:1000 
+          collisions:0 txqueuelen:1000
           RX bytes:0 (0.0 B)  TX bytes:648 (648.0 B)
 
-colbr0    Link encap:Ethernet  HWaddr ba:64:a9:b7:c3:1c  
+colbr0    Link encap:Ethernet  HWaddr ba:64:a9:b7:c3:1c
           inet addr:172.30.101.1  Bcast:0.0.0.0  Mask:255.255.255.0
           inet6 addr: fe80::b864:a9ff:feb7:c31c/64 Scope:Link
           UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
           RX packets:0 errors:0 dropped:0 overruns:0 frame:0
           TX packets:8 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:1000 
+          collisions:0 txqueuelen:1000
           RX bytes:0 (0.0 B)  TX bytes:648 (648.0 B)
 
-eth0      Link encap:Ethernet  HWaddr 00:16:3e:06:07:2d  
+eth0      Link encap:Ethernet  HWaddr 00:16:3e:06:07:2d
           inet addr:10.169.25.230  Bcast:10.169.25.255  Mask:255.255.255.0
           inet6 addr: fe80::216:3eff:fe06:72d/64 Scope:Link
           UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
           RX packets:564 errors:0 dropped:0 overruns:0 frame:0
           TX packets:102 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:1000 
+          collisions:0 txqueuelen:1000
           RX bytes:90741 (90.7 KB)  TX bytes:8776 (8.7 KB)
 
-lo        Link encap:Local Loopback  
+lo        Link encap:Local Loopback
           inet addr:127.0.0.1  Mask:255.0.0.0
           inet6 addr: ::1/128 Scope:Host
           UP LOOPBACK RUNNING  MTU:65536  Metric:1
           RX packets:0 errors:0 dropped:0 overruns:0 frame:0
           TX packets:0 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:1 
+          collisions:0 txqueuelen:1
           RX bytes:0 (0.0 B)  TX bytes:0 (0.0 B)
 
-trbr1     Link encap:Ethernet  HWaddr 00:00:00:00:00:00  
+trbr1     Link encap:Ethernet  HWaddr 00:00:00:00:00:00
           inet addr:192.168.101.100  Bcast:0.0.0.0  Mask:255.255.255.0
           inet6 addr: fe80::f468:ccff:feed:24b9/64 Scope:Link
           UP BROADCAST MULTICAST  MTU:1500  Metric:1
           RX packets:8 errors:0 dropped:0 overruns:0 frame:0
           TX packets:10 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:1000 
+          collisions:0 txqueuelen:1000
           RX bytes:536 (536.0 B)  TX bytes:828 (828.0 B)
 
-trbr2     Link encap:Ethernet  HWaddr 2a:4b:8b:6c:d3:85  
+trbr2     Link encap:Ethernet  HWaddr 2a:4b:8b:6c:d3:85
           inet addr:192.168.102.100  Bcast:0.0.0.0  Mask:255.255.255.0
           inet6 addr: fe80::284b:8bff:fe6c:d385/64 Scope:Link
           UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
           RX packets:0 errors:0 dropped:0 overruns:0 frame:0
           TX packets:8 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:1000 
+          collisions:0 txqueuelen:1000
           RX bytes:0 (0.0 B)  TX bytes:648 (648.0 B)
 
-trbr3     Link encap:Ethernet  HWaddr be:05:25:b6:5f:c1  
+trbr3     Link encap:Ethernet  HWaddr be:05:25:b6:5f:c1
           inet addr:192.168.103.100  Bcast:0.0.0.0  Mask:255.255.255.0
           inet6 addr: fe80::bc05:25ff:feb6:5fc1/64 Scope:Link
           UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
           RX packets:0 errors:0 dropped:0 overruns:0 frame:0
           TX packets:8 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:1000 
+          collisions:0 txqueuelen:1000
           RX bytes:0 (0.0 B)  TX bytes:648 (648.0 B)
 
-trbr4     Link encap:Ethernet  HWaddr 42:77:73:9c:7b:08  
+trbr4     Link encap:Ethernet  HWaddr 42:77:73:9c:7b:08
           inet addr:192.168.104.100  Bcast:0.0.0.0  Mask:255.255.255.0
           inet6 addr: fe80::4077:73ff:fe9c:7b08/64 Scope:Link
           UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
           RX packets:0 errors:0 dropped:0 overruns:0 frame:0
           TX packets:8 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:1000 
+          collisions:0 txqueuelen:1000
           RX bytes:0 (0.0 B)  TX bytes:648 (648.0 B)
 
-trbr5     Link encap:Ethernet  HWaddr a6:1f:43:c9:fb:25  
+trbr5     Link encap:Ethernet  HWaddr a6:1f:43:c9:fb:25
           inet addr:192.168.105.100  Bcast:0.0.0.0  Mask:255.255.255.0
           inet6 addr: fe80::a41f:43ff:fec9:fb25/64 Scope:Link
           UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
           RX packets:0 errors:0 dropped:0 overruns:0 frame:0
           TX packets:8 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:1000 
+          collisions:0 txqueuelen:1000
           RX bytes:0 (0.0 B)  TX bytes:648 (648.0 B)
 
-trbr6     Link encap:Ethernet  HWaddr 86:9c:ea:6f:e9:f6  
+trbr6     Link encap:Ethernet  HWaddr 86:9c:ea:6f:e9:f6
           inet addr:192.168.106.100  Bcast:0.0.0.0  Mask:255.255.255.0
           inet6 addr: fe80::849c:eaff:fe6f:e9f6/64 Scope:Link
           UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
           RX packets:0 errors:0 dropped:0 overruns:0 frame:0
           TX packets:8 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:1000 
+          collisions:0 txqueuelen:1000
           RX bytes:0 (0.0 B)  TX bytes:648 (648.0 B)
 
-usrpbr0   Link encap:Ethernet  HWaddr f2:ee:6d:f6:70:84  
+usrpbr0   Link encap:Ethernet  HWaddr f2:ee:6d:f6:70:84
           inet addr:192.168.40.2  Bcast:0.0.0.0  Mask:255.255.255.0
           inet6 addr: fe80::f0ee:6dff:fef6:7084/64 Scope:Link
           UP BROADCAST RUNNING MULTICAST  MTU:1500  Metric:1
           RX packets:0 errors:0 dropped:0 overruns:0 frame:0
           TX packets:8 errors:0 dropped:0 overruns:0 carrier:0
-          collisions:0 txqueuelen:1000 
+          collisions:0 txqueuelen:1000
           RX bytes:0 (0.0 B)  TX bytes:648 (648.0 B)
 ```
 
@@ -144,11 +144,11 @@ The Phase 2 Hurdle container will add the following network interfaces to compet
 | usrp0          | 192.168.40.{container octet} |
 | col0           | 192.168.101.{container octet}|
 
-In this table, container octect ranges between 104 and 106. 
+In this table, container octect ranges between 104 and 106.
 
 Note that col0 is only available on the node designated as the Collaboration gateway. **Competitors should use the existence of the col0 interface to determine that a node is the Collaboration gateway**. This interface is used to communicate with the Collaboration Server and with the bot network's Collaboration gateway.
 
-You can inspect the settings used for each interface by reviewing the interface config files named competitor-hurdle-srn{node number}_{interface name}0.cfg in /root/phase2-hurdles/hurdle_execution/ after the completion of a hurdle run.
+You can inspect the settings used for each interface by reviewing the interface config files named competitor-hurdle-srn{node number}_{interface name}0.cfg in /root/phase2-hurdle/hurdle_execution/ after the completion of a hurdle run.
 
 ### Network Map
 
@@ -217,14 +217,14 @@ Each traffic generator container runs an instance of MGEN to generate IP traffic
 
 ## Bot Containers
 
-Each run of the hurdle uses three bot containers. Each bot container is based on an **identical** image. The bot image comes in two varients, the Practice bot and the Hurdle bot. The Practice bot is available for use immediately. The Hurdle bot, used for official scoring runs, will be available at a later date. 
+Each run of the hurdle uses three bot containers. Each bot container is based on an **identical** image. The bot image comes in two varients, the Practice bot and the Hurdle bot. The Practice bot is available for use immediately. The Hurdle bot, used for official scoring runs, will be available at a later date.
 
 Bots interact with the RF environment simulator using IPs 192.168.40.101 through 192.168.40.103. Bots interact with traffic generator containers tgen1 through tgen3. The bot at 192.168.101.101 is the bot network's Collaboration gateway.
 
 
 ## Competitor Containers
 
-Each run of the hurdle uses three competitor containers. Each competitor container is based on an **identical** image, provided by the competitor. 
+Each run of the hurdle uses three competitor containers. Each competitor container is based on an **identical** image, provided by the competitor.
 
 The competitor container that has a col0 interface is the container designated as the Collaboration gateway.
 
@@ -236,7 +236,7 @@ The Collaboration server is a service running in the Phase 2 Hurdle container. I
 
 ## LXD
 
-The Phase 2 Hurdle is provided as a single LXD container with several sub containers. See below for 
+The Phase 2 Hurdle is provided as a single LXD container with several sub containers. See below for
 what to expect in terms of the images and containers to find in the Phase 2 Hurdle container.
 
 
@@ -372,7 +372,7 @@ Confirm that the containers are based on the correct image by running:
 lxc config get darpa-practice-srn1 volatile.base_image
 ```
 
-This will output the full fingerprint of the container's base image. Compare the start of this 
+This will output the full fingerprint of the container's base image. Compare the start of this
 fingerprint against the fingerprint shown next to the appropriate image version when you run:
 
 ```bash
@@ -393,12 +393,12 @@ You'll see something similar to the following:
 +------------------------------+--------------+--------+-------------------------------------------------+--------+-----------+-------------------------------+
 ```
 
-You can cross reference the alias and fingerprint for the practice bot against the Versions.md text file available at 
+You can cross reference the alias and fingerprint for the practice bot against the Versions.md text file available at
 https://github.com/SpectrumCollaborationChallenge/phase2-hurdle/releases/latest
 
 
 ### Linux ID Mapping
-Linux systems assume they will have access to at least 65536 unique user IDs and group IDs to work properly. The standard LXD configuration provides subcontainers with a range of user IDs and group IDs starting at either 100000 or 165536 and spanning 65536 IDs, as seen in the root and lxd entries in /etc/subuid and /etc/subgid. 
+Linux systems assume they will have access to at least 65536 unique user IDs and group IDs to work properly. The standard LXD configuration provides subcontainers with a range of user IDs and group IDs starting at either 100000 or 165536 and spanning 65536 IDs, as seen in the root and lxd entries in /etc/subuid and /etc/subgid.
 
 That is sufficient for a single layer of containers, but is a problem for nested containers as used in the Phase 2 Hurdle framework. As this framework uses two layers of containers, the top level container will need at least 2 x 65536 IDs. See the figure below for an illustration of the UID and GID mappings used in the containers in the Phase 2 Hurdle framework.
 
@@ -436,13 +436,13 @@ lxd:65536:65536
 root:65536:65536
 ```
 
-These files map the IDs in subcontainers to beginning at Phase 2 Hurdle container ID 65536 and spanning 65536 IDs. 
+These files map the IDs in subcontainers to beginning at Phase 2 Hurdle container ID 65536 and spanning 65536 IDs.
 
 ## OS
 
 ### Phase 2 Hurdle Container
 
-The Phase 2 Hurdle container is based on a Ubuntu 16.04 LTS 64 bit image. 
+The Phase 2 Hurdle container is based on a Ubuntu 16.04 LTS 64 bit image.
 
 ### Traffic Generator Images
 

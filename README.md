@@ -6,10 +6,10 @@ https://spectrumcollaborationchallenge.com
 Welcome to the DARPA Spectrum Collaboration Challenge (SC2) Phase 2 Hurdle repository.
 
 ## Documentation
-Please see the following list for links to useful documentation on the Phase 2 Hurdle. 
+Please see the following list for links to useful documentation on the Phase 2 Hurdle.
 
-We recommend starting with the [Problem Statement][phase 2 hurdle problem statement], 
-followed by [Instructions and Logistics][phase 2 hurdle instructions and logistics] and then [Container Detailed Specification][phase 2 hurdle container detailed specification]. 
+We recommend starting with the [Problem Statement][phase 2 hurdle problem statement],
+followed by [Instructions and Logistics][phase 2 hurdle instructions and logistics] and then [Container Detailed Specification][phase 2 hurdle container detailed specification].
 
 
 * [Phase 2 Hurdle Problem Statement][phase 2 hurdle problem statement]
@@ -32,7 +32,7 @@ These files can all be found under the [doc/](doc/) directory in this repository
 * [Long Form Registration Page](https://spectrumcollaborationchallenge.com/register-for-phase-2-open-track/)
 
 ## Code
-The source code used to run the hurdles, not including the bots, can be found in:
+The source code used to run the hurdle, not including the bots, can be found in:
 
 * [collab_protocol/](collab_protocol/)
 * [container_configuration/](container_configuration/)

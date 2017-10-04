@@ -11,16 +11,16 @@ import time
 
 
 # Set up constants
-SAMP_RATE=2000e3
+SAMP_RATE=1000e3
 
-CHAN_GAIN_LINEAR = 0.001
-
+CHAN_GAIN_LINEAR = 0.1
+NOISE_AMP = 0.0001
 # note this is used in a couple of files. pull out to config file
 COMPETITOR_NAME_BASE='competitor-hurdle-srn'
 NUM_COMPETITOR_CONTAINERS = 3
 NUM_BOT_CONTAINERS = 3
-#TODO: Increase back to 300
-CONTAINER_BOOT_TIMEOUT=30.0
+
+CONTAINER_BOOT_TIMEOUT=300.0
 COMMAND_PATH_BASE="./"
 
 ENVSIM_PORT_NUM_BASE=52001
@@ -331,7 +331,8 @@ def main():
            "--samp-rate={}".format(SAMP_RATE),
            "--usrp-ip-prefix={}".format(USRP_IP_PREFIX),
            "--usrp-ip-base={}".format(USRP_IP_BASE),
-           "--channel-gain-linear={}".format(CHAN_GAIN_LINEAR)]
+           "--channel-gain-linear={}".format(CHAN_GAIN_LINEAR),
+           "--noise-amp={}".format(NOISE_AMP)]
 
     print("Starting envsim by running {}".format(" ".join(cmd)))
     ret_code = run_subproc_and_print_output(cmd)
