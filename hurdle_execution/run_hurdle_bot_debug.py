@@ -3,29 +3,26 @@
 import argparse
 import configparser
 import json
-import logging
-import math
 import os
 import pylxd
 import subprocess
 import sys
 import time
 
-from mgen_parser import mgen_parser
-from traffic_scoring import score_traffic
 
+# Set up constants
+SAMP_RATE=200e3
 
-# note this is used in a couple of files. pull out to config file
+CHAN_GAIN_LINEAR = 0.1
+NOISE_AMP = 0.0001
+
 COMPETITOR_NAME_BASE='competitor-hurdle-srn'
-NUM_COMPETITOR_CONTAINERS = 3
 NUM_BOT_CONTAINERS = 3
 
 CONTAINER_BOOT_TIMEOUT=300.0
 COMMAND_PATH_BASE="./"
 
 ENVSIM_PORT_NUM_BASE=52001
-
-RESULT_FILENAME="hurdle_packet_counts.json"
 
 # USRP Interfaces start at 192.168.40.<USRP0_IP_BASE + node num (0 indexed)>
 USRP_IP_PREFIX = "192.168.40."
@@ -48,50 +45,23 @@ BOT_STATE_FILE_PATH = "/var/log/bot_state"
 TGEN_NAME_BASE = "tgen"
 MGEN_LOG_PATH = "/home/mgen/mgen_traffic_log.drc"
 
-FORMAT = '%(asctime)s %(name)s %(levelname)s: %(message)s'
-logging.basicConfig(format=FORMAT, level=logging.INFO)
-logger = logging.getLogger(__name__)
-
-# ws4py is way too chatty by default.
-ws4pylogger = logging.getLogger("ws4py")
-ws4pylogger.setLevel(logging.WARN)
-
 def retrieve_traffic_logs(bot_names, comp_names, tgen_name_base):
     '''
     pull traffic logs out of tgen containers
     '''
 
     name_list = bot_names + comp_names
-    bot_logfiles = []
-    comp_logfiles = []
 
-    for i, name in enumerate(bot_names):
+    for i,name in enumerate(name_list):
         tgen_name = tgen_name_base + "{}".format(i+1)
 
         source = tgen_name+MGEN_LOG_PATH
-        destination = "./{}_mgen_traffic_log.drc".format(name)
-
-        bot_logfiles.append(destination)
+        destination  ="./{}_mgen_traffic_log.drc".format(name)
 
         push_cmd = ["lxc", "file", "pull", source, destination]
         print("Pulling traffic log file from {} to {}".format(source, destination))
         print("running {}".format(" ".join(push_cmd)))
         subprocess.run(push_cmd)
-
-    for i, name in enumerate(comp_names):
-        tgen_name = tgen_name_base + "{}".format(i+1+len(bot_names))
-
-        source = tgen_name+MGEN_LOG_PATH
-        destination = "./{}_mgen_traffic_log.drc".format(name)
-
-        comp_logfiles.append(destination)
-
-        push_cmd = ["lxc", "file", "pull", source, destination]
-        print("Pulling traffic log file from {} to {}".format(source, destination))
-        print("running {}".format(" ".join(push_cmd)))
-        subprocess.run(push_cmd)
-
-    return bot_logfiles, comp_logfiles
 
 def handle_collab_server(action):
     '''
@@ -224,7 +194,7 @@ def run_radio_api_on_nodes(container_list, script):
     Run the specified radio_api script on every container in the container list
     '''
 
-    for c in reversed(container_list):
+    for c in container_list:
         print("calling {} on {}".format(script, c.name))
         try:
             (retcode, stdout, stderr) = c.execute([script,])
@@ -272,32 +242,17 @@ def main():
     parser = argparse.ArgumentParser(prog="run_hurdle",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument("--bot-mode", choices=["practice", "dummy"], default="practice",
+    parser.add_argument("--bot-mode", choices=["practice",], default="practice",
                         help="Currently only practice bots are supported. Hurdle bots to be added at a later date")
 
     parser.add_argument('--duration', type=float, default=300.0,
                         help="How long to run hurdle, not including bootup, in seconds")
 
-    parser.add_argument('--sample-rate', type=float, default=1e6, choices=[200e3, 500e3, 1e6, 2e6],
-                        help="Sample rate to run the hurdle")
-
     parser.add_argument('--image-file', default="competitor-image.tar.gz",
                         help="Name of the container stored in /share/nas/competitor/images/ to use for this run")
 
-    parser.add_argument('--disable-competitor-containers', action="store_true", default=False,
-                        help="When specified, the run script will not use the competitor containers")
-
-    parser.add_argument('--clean-competitor-containers', action="store_true", default=False,
+    parser.add_argument('--clean-competitor-containers', action="store_true",
                         help="When specified, this flag will make the run script remove the competitor containers at the end of a run")
-
-    parser.add_argument('--packet-rate', type=float, default=5.0,
-                        help="Packet rate for bots and competitors")
-
-    parser.add_argument('--noise-amp', type=float, default=0.0001,
-                        help="Amplitude of gaussian background noise")
-
-    parser.add_argument('--chan-gain-linear', type=float, default=0.1,
-                        help="Channel gain as a linear scalar applied to each channel")
 
     # parse args and store to dictionary
     args = vars(parser.parse_args())
@@ -309,52 +264,14 @@ def main():
     # set up whether we're using practice or hurdle bot mode.
     if args["bot_mode"] == "practice":
         bot_name_base = "darpa-practice-srn"
-
-    elif args["bot_mode"] == "hurdle":
+    else:
         bot_name_base = "darpa-hurdle-srn"
 
-    # used only for internal debug
-    elif args["bot_mode"] == "dummy":
-        bot_name_base = "dummy-tx-srn"
-    else:
-        raise ValueError("Uknown bot mode {} specified".format(args["bot_mode"]))
 
-    if args["disable_competitor_containers"]:
-        comp_containers = []
-        comp_container_names = []
-        # put envsim into a 3 channel mode instead of the full six channel mode
-        envsim_mode = "bot-debug"
-    else:
-        # run envsim in its normal 6 channel mode
-        envsim_mode = "hurdle"
-
-        # initialize and configure 3 copies of competitor container
-        cmd = [os.path.join(COMMAND_PATH_BASE, "configure_competitor_containers.py"),
-            "--image-file", args["image_file"]]
-        print("Initializing competitor containers based on {}. This may take several minutes".format(args["image_file"]))
-        print("Running {}".format(" ".join(cmd)))
-        ret_code = run_subproc_and_print_output(cmd)
-
-        if ret_code != 0:
-            print("Could not load competitor container. Exiting")
-            sys.exit(1)
-
-        comp_container_names = [COMPETITOR_NAME_BASE+"{}".format(i+1) for i in range(NUM_BOT_CONTAINERS, NUM_BOT_CONTAINERS+NUM_COMPETITOR_CONTAINERS)]
-
-        # get references to competitor containers
-        comp_containers = [lxd_client.containers.get(name) for name in comp_container_names]
-        if len(comp_containers) != NUM_COMPETITOR_CONTAINERS:
-            print("Expecting {} competitor containers, found {}".format(NUM_COMPETITOR_CONTAINERS, len(comp_containers)))
-            if len(comp_containers) > NUM_COMPETITOR_CONTAINERS:
-                print("Please remove extra containers with lxc rm <name>. Current list is: {}".format(comp_container_names))
-            else:
-                print("Competitor containers not found. List is: {}".format(my_containers))
-            raise ValueError
 
     # get list of all containers currently loaded
     my_containers = lxd_client.containers.all()
 
-    # build list of expected bot container names
     bot_container_names = [bot_name_base+"{}".format(i+1) for i in range(NUM_BOT_CONTAINERS)]
 
     # get references to bot containers
@@ -370,17 +287,17 @@ def main():
 
 
     # Set up and deploy Colosseum Config files to nodes
-    config_filenames = write_colosseum_config_ini_files(num_nodes=len(comp_containers)+len(bot_containers),
+    config_filenames = write_colosseum_config_ini_files(num_nodes=NUM_BOT_CONTAINERS,
                                                         envsim_port_base=ENVSIM_PORT_NUM_BASE,
                                                         collab_server_ip=COLLAB_SERVER_IP,
                                                         collab_server_port=COLLAB_SERVER_PORT,
                                                         collab_client_port=COLLAB_CLIENT_PORT,
                                                         collab_peer_port=COLLAB_PEER_PORT,
-                                                        samp_rate=args["sample_rate"],
+                                                        samp_rate=SAMP_RATE,
                                                         center_freq=1e9)
 
     # Push ColosseumConfig.ini into bot and competitor containers
-    install_colosseum_config_files(bot_containers, comp_containers, config_filenames)
+    install_colosseum_config_files(bot_containers, [], config_filenames)
 
     # start all containers
     cmd = [os.path.join(COMMAND_PATH_BASE, "container_control.py"),
@@ -396,17 +313,16 @@ def main():
         print("All necessary containers did not start. Exiting")
         sys.exit(1)
 
-
     # start envsim
     cmd = [os.path.join(COMMAND_PATH_BASE, "envsim_control.py"),
-           "--mode={}".format(envsim_mode),
+           "--mode={}".format("bot-debug"),
            "start",
            "--port-num-base={}".format(ENVSIM_PORT_NUM_BASE),
-           "--samp-rate={}".format(args["sample_rate"]),
+           "--samp-rate={}".format(SAMP_RATE),
            "--usrp-ip-prefix={}".format(USRP_IP_PREFIX),
            "--usrp-ip-base={}".format(USRP_IP_BASE),
-           "--channel-gain-linear={}".format(args["chan_gain_linear"]),
-           "--noise-amp={}".format(args["noise_amp"])]
+           "--channel-gain-linear={}".format(CHAN_GAIN_LINEAR),
+           "--noise-amp={}".format(NOISE_AMP)]
 
     print("Starting envsim by running {}".format(" ".join(cmd)))
     ret_code = run_subproc_and_print_output(cmd)
@@ -419,7 +335,7 @@ def main():
     handle_collab_server(action="start")
 
     # poll containers for ready state in radio_api loop
-    poll_radio_api_for_start_with_timeout(bot_containers, comp_containers, CONTAINER_BOOT_TIMEOUT)
+    poll_radio_api_for_start_with_timeout(bot_containers, [], CONTAINER_BOOT_TIMEOUT)
 
     print("all containers booted")
 
@@ -434,13 +350,13 @@ def main():
         sys.exit(1)
 
     #   call start on each node
-    run_radio_api_on_nodes(bot_containers+comp_containers, script=os.path.join(RADIO_API_PATH,"start.sh"))
+    run_radio_api_on_nodes(bot_containers, script=os.path.join(RADIO_API_PATH,"start.sh"))
 
     #   start traffic
     cmd = [os.path.join(COMMAND_PATH_BASE, "traffic_control.py"),
            "start",
            "--traffic-duration", str(args["duration"]),
-           "--bot-peak-msg-rate={}".format(args["packet_rate"])]
+           "--bot-peak-msg-rate", str(1.0)]
 
     print("Starting traffic by running {}".format(" ".join(cmd)))
     ret_code = run_subproc_and_print_output(cmd)
@@ -451,7 +367,7 @@ def main():
     hurdle_time = args["duration"] + HURDLE_TIMING_SLOP
     while(elapsed_time < hurdle_time):
         print("waiting {} more seconds for hurdle to complete".format(hurdle_time-elapsed_time))
-        run_radio_api_on_nodes(bot_containers+comp_containers, script=os.path.join(RADIO_API_PATH,"status.sh"))
+        run_radio_api_on_nodes(bot_containers, script=os.path.join(RADIO_API_PATH,"status.sh"))
         time.sleep(10)
         elapsed_time = time.time()-start_time
 
@@ -472,16 +388,15 @@ def main():
 
 
     #   call stop on each node
-    run_radio_api_on_nodes(bot_containers+comp_containers, script=os.path.join(RADIO_API_PATH,"stop.sh"))
+    run_radio_api_on_nodes(bot_containers, script=os.path.join(RADIO_API_PATH,"stop.sh"))
 
     # stop collaboration server
     handle_collab_server(action="stop")
 
     #   stop envsim
     cmd = [os.path.join(COMMAND_PATH_BASE, "envsim_control.py"),
-           "--mode={}".format(envsim_mode),
+           "--mode={}".format("bot-debug"),
            "stop"]
-
     print("Stopping envsim by running {}".format(" ".join(cmd)))
     ret_code = run_subproc_and_print_output(cmd)
 
@@ -499,29 +414,7 @@ def main():
 
 
     #   TODO: consider what other logs we should grab
-    bot_logfiles, comp_logfiles = retrieve_traffic_logs(bot_container_names,
-                                                        comp_container_names,
-                                                        TGEN_NAME_BASE)
-
-    # parse bot and competitor log files
-    bot_traffic_logs = [mgen_parser(bot_log) for bot_log in bot_logfiles]
-    comp_traffic_logs = [mgen_parser(comp_log) for comp_log in comp_logfiles]
-
-    # compute expected number of packets per network
-    bootup_slop_time = 8.0
-    num_packets = math.floor(args["packet_rate"]*NUM_BOT_CONTAINERS*(args["duration"]-bootup_slop_time)*(NUM_BOT_CONTAINERS-1))
-    score_traffic(bot_traffic_logs, comp_traffic_logs, num_packets, RESULT_FILENAME)
-
-    # optionally clear out competitor containers at the end of the run
-    # One one hand, it may be useful to leave them in to be able to poke at logs. On the other
-    # hand, then they need to be removed manually by the user, and that can get tedious
-    if args["clean_competitor_containers"]:
-        # remove bot containers
-
-        # todo: wait for up to X seconds for competitor containers to shut down before calling this
-        cmd = ["lxc", "rm",] + comp_container_names
-        run_subproc_and_print_output(cmd)
-
+    retrieve_traffic_logs(bot_container_names, [], TGEN_NAME_BASE)
 
 if __name__ == "__main__":
     main()

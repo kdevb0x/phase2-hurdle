@@ -31,7 +31,8 @@
  * where each IQ sample is made up of two floats.
  *
  * The only required dictionary elements are "timestamp_s",
- * which is the timestamp of the start of the packet, and
+ * which is the timestamp of the start of the packet, "packet_count",
+ * which is used to detect dropped packets, and
  * "packet_len", which is the number of samples in the packet.
  * This timestamp is stored as a PMT tuple. The first
  * element of the tuple is an integer timestamp of seconds
@@ -43,13 +44,15 @@
 namespace gr {
 namespace envsim {
 
-pmt_t iq_packet_create(std::string event_type, uhd::time_spec_t uhd_time) {
+pmt_t iq_packet_create(std::string event_type, uhd::time_spec_t uhd_time,
+                       int count) {
   // setup header metadata info
   pmt_t meta = make_dict();
   pmt_t timestamp = make_tuple(from_uint64(uhd_time.get_full_secs()),
                                from_uint64(uhd_time.get_frac_secs() * 1e12));
   meta = dict_add(meta, PACKET_TIMESTAMP_S, timestamp);
   meta = dict_add(meta, PACKET_LEN, from_long(0));
+  meta = dict_add(meta, PACKET_COUNT, from_long(count));
 
   // store data to PMT
   std::complex<float> temp;
@@ -59,13 +62,14 @@ pmt_t iq_packet_create(std::string event_type, uhd::time_spec_t uhd_time) {
 }
 
 pmt_t iq_packet_create(std::string event_type, uint64_t time_s,
-                       uint64_t time_ps, int length,
+                       uint64_t time_ps, int length, int count,
                        const std::complex<float> *samples) {
   // setup header metadata info
   pmt_t meta = make_dict();
   pmt_t timestamp = make_tuple(from_uint64(time_s), from_uint64(time_ps));
   meta = dict_add(meta, PACKET_TIMESTAMP_S, timestamp);
   meta = dict_add(meta, PACKET_LEN, from_long(length));
+  meta = dict_add(meta, PACKET_COUNT, from_long(count));
 
   // store data to PMT
   pmt_t data = init_c32vector(length, samples);
@@ -74,10 +78,10 @@ pmt_t iq_packet_create(std::string event_type, uint64_t time_s,
 }
 
 pmt_t iq_packet_create(std::string event_type, uhd::time_spec_t uhd_time,
-                       int length, const std::complex<float> *data) {
+                       int length, int count, const std::complex<float> *data) {
   // convert from uhd time_spec to int seconds and frac seconds
   return iq_packet_create(event_type, uhd_time.get_full_secs(),
-                          uhd_time.get_frac_secs() * 1e12, length, data);
+                          uhd_time.get_frac_secs() * 1e12, length, count, data);
 }
 
 } /* namespace envsim */

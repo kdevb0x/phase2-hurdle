@@ -18,7 +18,7 @@
  * Boston, MA 02110-1301, USA.
  */
 
-/* The code in this module is largely inspired by concepts from 
+/* The code in this module is largely inspired by concepts from
  * https://github.com/osh/gr-eventstream
  */
 
@@ -32,20 +32,24 @@
 namespace gr {
 namespace envsim {
 
-envsim_source::sptr envsim_source::make(double sample_rate) {
-  return gnuradio::get_initial_sptr(new envsim_source_impl(sample_rate));
+envsim_source::sptr envsim_source::make(double sample_rate,
+                                        int start_time_int_s,
+                                        double start_time_frac_s) {
+  return gnuradio::get_initial_sptr(
+      new envsim_source_impl(sample_rate, start_time_int_s, start_time_frac_s));
 }
 
 /*
  * The private constructor
  */
-envsim_source_impl::envsim_source_impl(double sample_rate)
+envsim_source_impl::envsim_source_impl(double sample_rate, int start_time_int_s,
+                                       double start_time_frac_s)
     : gr::sync_block("envsim_source", gr::io_signature::make(0, 0, 0),
                      gr::io_signature::make(1, 1, sizeof(gr_complex))),
-      d_start_time_s(0),
-      d_start_time_ps(0),
-      d_time_initialized(false),
-      d_sample_rate(sample_rate) {
+      d_start_time_s(start_time_int_s),
+      d_start_time_ps(start_time_frac_s),
+      d_sample_rate(sample_rate),
+      d_packet_counter(0) {
   // grow the residue capacity (not length) to our best guess at a maximum
   // packet size
   d_residue.reserve(DEFAULT_RESIDUE_SIZE);
@@ -53,6 +57,12 @@ envsim_source_impl::envsim_source_impl(double sample_rate)
   message_port_register_in(PACKET_PORT_ID);
   set_msg_handler(PACKET_PORT_ID,
                   boost::bind(&envsim_source_impl::packet_handler, this, _1));
+
+  if (d_start_time_s != 0 || d_start_time_ps != 0) {
+    d_time_initialized = true;
+  } else {
+    d_time_initialized = false;
+  }
 }
 
 /*
@@ -66,7 +76,17 @@ void envsim_source_impl::packet_handler(pmt::pmt_t pkt) {
 
   // std::cout << "running packet handler" << std::endl;
 
-  // assume packets come in with metadata including the timestamp in seconds, ps
+  // check for missing packets
+  int this_packet_counter = packet_counter(pkt);
+  if (d_packet_counter != this_packet_counter) {
+    d_logger->warn("expected packet count %i, received %i", d_packet_counter,
+                   this_packet_counter);
+  }
+  // update packet counter to the expected count for the next packet
+  d_packet_counter = this_packet_counter + 1;
+
+  // assume packets come in with metadata including the timestamp in
+  // seconds, ps
   // add the timestamp_counts field
   add_counts_timestamp(pkt);
 
@@ -87,7 +107,7 @@ void envsim_source_impl::packet_handler(pmt::pmt_t pkt) {
 
     // if this packet starts before the end of the last packet, drop it
     if (pkt_start_counts < last_end_counts) {
-      std::cout << "packet dropped: overlaps existing packet" << std::endl;
+      d_logger->warn("packet dropped: overlaps existing packet");
       return;
     }
   }
@@ -102,6 +122,8 @@ void envsim_source_impl::packet_handler(pmt::pmt_t pkt) {
   // d_packet_queue.size() << std::endl;
   return;
 }
+
+// TODO: Extract IQ packet specific methods into the IQ Packet class
 
 /*
  * Given an IQ packet as a PMT, try to extract the packet timestamp
@@ -121,6 +143,16 @@ int envsim_source_impl::packet_length(pmt::pmt_t iq_packet) {
   pmt::pmt_t pmt_len =
       pmt::dict_ref(pmt::car(iq_packet), PACKET_LEN, pmt::PMT_NIL);
   return pmt::to_long(pmt_len);
+}
+
+/*
+ * Given an IQ packet as a PMT, try to extract the packet count
+ * from the packet metadata
+ */
+int envsim_source_impl::packet_counter(pmt::pmt_t iq_packet) {
+  pmt::pmt_t pmt_counter =
+      pmt::dict_ref(pmt::car(iq_packet), PACKET_COUNT, pmt::PMT_NIL);
+  return pmt::to_long(pmt_counter);
 }
 
 /*
@@ -178,6 +210,9 @@ int envsim_source_impl::work(int noutput_items,
     d_start_time_s = tv_now.tv_sec;
     d_start_time_ps = tv_now.tv_usec * 1000000;
     d_time_initialized = true;
+
+    d_logger->debug("start time initialized to %i %f s", d_start_time_s,
+                    d_start_time_ps / 1e12);
   }
 
   // std::cout << "work called with noutput_items: " << noutput_items <<
@@ -187,6 +222,8 @@ int envsim_source_impl::work(int noutput_items,
   // setup output buffer and zeroize all elements
   gr_complex *out = (gr_complex *)output_items[0];
   memset(out, 0x00, noutput_items * sizeof(gr_complex));
+
+  // d_logger->debug("work called with %i output items", noutput_items);
 
   // get the current number of samples we've processed to date
   // and use that as our internal block time
@@ -220,6 +257,7 @@ int envsim_source_impl::work(int noutput_items,
 
     // update output offset
     output_offset = nitems_to_output;
+    // return nitems_to_output;
   }
 
   // setup time bounds for the current sample buffer
@@ -260,11 +298,9 @@ int envsim_source_impl::work(int noutput_items,
     if (p_time < b_time + output_offset) {
       // if this packet starts in the past, drop it and continue
       // processing new packets
-
-      std::cout
-          << "packet starts in the past, dropping. packet late by counts: "
-          << b_time - p_time << std::endl;
-      continue;
+      d_logger->warn(
+          "packet starts in the past, dropping. packet late by counts: %i",
+          b_time + output_offset - p_time);
     }
 
     // if the event isn't in the future or the past, pass it to output
@@ -273,8 +309,12 @@ int envsim_source_impl::work(int noutput_items,
     // find the relative offset of the packet's start time in
     // our output buffer
     output_offset = p_time - b_time;
-
-    // std::cout << "outputting packet with timestamp " << p_time << std::endl;
+    // d_logger->debug(
+    //     "processing packet with packet start count of %i for output sample
+    //     %i",
+    //     p_time, nitems_written(0) + output_offset);
+    // std::cout << "outputting packet with timestamp " << p_time <<
+    // std::endl;
     // std::cout << "output_offset is " << output_offset << std::endl;
 
     // compute number of samples to output
@@ -312,6 +352,28 @@ int envsim_source_impl::work(int noutput_items,
 
       // std::cout <<"residue size now " << d_residue.size() << std::endl;
     }
+  }
+
+  if (output_offset == 0) {
+    int64_t block_start_s, block_start_ps, block_stop_s, block_stop_ps;
+
+    block_start_ps = d_start_time_ps + (1e12 / d_sample_rate) * min_time;
+    block_stop_ps = d_start_time_ps + (1e12 / d_sample_rate) * max_time;
+
+    // add integer seconds to start time
+    block_start_s = d_start_time_s + int64_t(block_start_ps / 1e12);
+    block_stop_s = d_start_time_s + int64_t(block_stop_ps / 1e12);
+
+    // remove the integer seconds from the picoseconds variables
+    block_start_ps = block_start_ps - int64_t(block_start_ps / 1e12) * 1e12;
+    block_stop_ps = block_stop_ps - int64_t(block_stop_ps / 1e12) * 1e12;
+
+    // d_logger->warn(
+    //     "no packets found for time %lld %f to time %lld %f. zero filling.",
+    //     block_start_s, double(block_start_ps) / 1e12, block_stop_s,
+    //     double(block_stop_ps) / 1e12);
+
+    // std::cerr << "U";
   }
 
   // Tell runtime system how many output items we produced.

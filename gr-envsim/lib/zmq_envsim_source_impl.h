@@ -1,6 +1,6 @@
 /* -*- c++ -*- */
 /*
- * Copyright 2017 DARPA.
+ * Copyright 2017 <+YOU OR YOUR COMPANY+>.
  *
  * This is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,32 +18,28 @@
  * Boston, MA 02110-1301, USA.
  */
 
-/* The code in this module is largely inspired by concepts from
- * https://github.com/osh/gr-eventstream
- */
+#ifndef INCLUDED_ENVSIM_ZMQ_ENVSIM_SOURCE_IMPL_H
+#define INCLUDED_ENVSIM_ZMQ_ENVSIM_SOURCE_IMPL_H
 
-#ifndef INCLUDED_ENVSIM_ENVSIM_SOURCE_IMPL_H
-#define INCLUDED_ENVSIM_ENVSIM_SOURCE_IMPL_H
-
-#include <envsim/envsim_source.h>
-#include <algorithm>
-//#include <cstring>
+#include <envsim/zmq_envsim_source.h>
 #include <sys/time.h>
 #include <time.h>
+#include <algorithm>
+#include <cstring>
 #include <mutex>
 #include <queue>
+#include <sstream>
 
+#include <zmq.hpp>
 #include "iq_packet.h"
 
-#define DEFAULT_QUEUE_SIZE 128
 #define DEFAULT_RESIDUE_SIZE 4096
 #define TIMESTAMP_COUNTS pmt::mp("timestamp_counts")
-#define PACKET_PORT_ID pmt::mp("packets")
 
 namespace gr {
 namespace envsim {
 
-class envsim_source_impl : public envsim_source {
+class zmq_envsim_source_impl : public zmq_envsim_source {
  private:
   // add some variables used to convert between wall time
   // and sample counts
@@ -55,11 +51,11 @@ class envsim_source_impl : public envsim_source {
 
   int d_packet_counter;
 
+  int d_ontime_packet_counter;
+  int d_late_packet_counter;
+
   // add an event queue used to store incoming IQ packets.
   std::queue<pmt::pmt_t> d_packet_queue;
-
-  // mutex used to protect access to d_packet_queue
-  std::mutex d_packet_queue_mutex;
 
   // container to store samples that didn't fit in the output
   // buffer when handling a packet
@@ -76,14 +72,25 @@ class envsim_source_impl : public envsim_source {
 
   void packet_handler(pmt::pmt_t pkt);
 
+  // zmq specific items
+  zmq::context_t *d_context;
+  zmq::socket_t *d_socket;
+  size_t d_vsize;
+  int d_timeout;
+
+  zmq::message_t d_msg;
+  int d_consumed_items;
+
+  bool has_pending();
+  int flush_pending(gr_complex *out_buf, int noutput_items);
+  bool check_for_message();
+  void load_message();
+
  public:
-  envsim_source_impl(double sample_rate, int start_time_int_s,
-                     double start_time_frac_s);
-  ~envsim_source_impl();
-
-  void set_start_time(int64_t start_time_s, int64_t start_time_ps);
-
-  pmt::pmt_t start_time();
+  zmq_envsim_source_impl(char *address, int timeout, int hwm,
+                         double sample_rate, int start_time_int_s,
+                         double start_time_frac_s);
+  ~zmq_envsim_source_impl();
 
   // Where all the action really happens
   int work(int noutput_items, gr_vector_const_void_star &input_items,
@@ -93,4 +100,4 @@ class envsim_source_impl : public envsim_source {
 }  // namespace envsim
 }  // namespace gr
 
-#endif /* INCLUDED_ENVSIM_ENVSIM_SOURCE_IMPL_H */
+#endif /* INCLUDED_ENVSIM_ZMQ_ENVSIM_SOURCE_IMPL_H */

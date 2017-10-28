@@ -2,15 +2,15 @@
 # -*- coding: utf-8 -*-
 ##################################################
 # GNU Radio Python Flow Graph
-# Title: Env Sim Server
-# Generated: Fri Oct 27 13:57:14 2017
+# Title: Env Sim Server Bot Debug
+# Generated: Thu Oct 26 20:09:30 2017
 ##################################################
 
 from gnuradio import analog
 from gnuradio import blocks
-from gnuradio import channels
 from gnuradio import eng_notation
 from gnuradio import gr
+from gnuradio import zeromq
 from gnuradio.eng_option import eng_option
 from gnuradio.filter import firdes
 from optparse import OptionParser
@@ -20,10 +20,10 @@ import temp_py_mod  # embedded python module
 import time
 
 
-class env_sim_server(gr.top_block):
+class env_sim_server_bot_debug(gr.top_block):
 
     def __init__(self, config_file='envsim.ini'):
-        gr.top_block.__init__(self, "Env Sim Server")
+        gr.top_block.__init__(self, "Env Sim Server Bot Debug")
 
         ##################################################
         # Parameters
@@ -43,7 +43,7 @@ class env_sim_server(gr.top_block):
         try: usrp_ip_base = self._usrp_ip_base_config.getint('main', 'usrp_ip_base')
         except: usrp_ip_base = 101
         self.usrp_ip_base = usrp_ip_base
-        self.num_nodes = num_nodes = 6
+        self.num_nodes = num_nodes = 3
         self.now = now = time.time()
         self._increment_usrp_address_bool_config = ConfigParser.ConfigParser()
         self._increment_usrp_address_bool_config.read(config_file)
@@ -83,42 +83,22 @@ class env_sim_server(gr.top_block):
         ##################################################
         # Blocks
         ##################################################
-        self.envsim_zmq_envsim_source_0_2_0_0 = envsim.zmq_envsim_source("tcp://"+ usrp_ip_list[2] + ":" +  str(port_num_base+2),
+        self.zeromq_push_sink_0_0_0_0 = zeromq.push_sink(gr.sizeof_gr_complex, 1, zmq_base_addr+str(port_num_base+3), 100, False, -1)
+        self.envsim_zmq_envsim_source_0_1 = envsim.zmq_envsim_source("tcp://"+ usrp_ip_list[2]+ ":" +  str(port_num_base+2),
                                          10,
                                          100,
                                          samp_rate,
                                          env_time_int_s,
                                          env_time_frac_s)
 
-        self.envsim_zmq_envsim_source_0_2_0 = envsim.zmq_envsim_source("tcp://"+ usrp_ip_list[1] + ":" +  str(port_num_base+1),
+        self.envsim_zmq_envsim_source_0_0 = envsim.zmq_envsim_source("tcp://"+ usrp_ip_list[1]+ ":" +  str(port_num_base+1),
                                          10,
                                          100,
                                          samp_rate,
                                          env_time_int_s,
                                          env_time_frac_s)
 
-        self.envsim_zmq_envsim_source_0_2 = envsim.zmq_envsim_source("tcp://"+ usrp_ip_list[0] + ":" +  str(port_num_base+0),
-                                         10,
-                                         100,
-                                         samp_rate,
-                                         env_time_int_s,
-                                         env_time_frac_s)
-
-        self.envsim_zmq_envsim_source_0_1 = envsim.zmq_envsim_source("tcp://"+ usrp_ip_list[3] + ":" +  str(port_num_base+3),
-                                         10,
-                                         100,
-                                         samp_rate,
-                                         env_time_int_s,
-                                         env_time_frac_s)
-
-        self.envsim_zmq_envsim_source_0_0 = envsim.zmq_envsim_source("tcp://"+ usrp_ip_list[4] + ":" +  str(port_num_base+4),
-                                         10,
-                                         100,
-                                         samp_rate,
-                                         env_time_int_s,
-                                         env_time_frac_s)
-
-        self.envsim_zmq_envsim_source_0 = envsim.zmq_envsim_source("tcp://"+ usrp_ip_list[5] + ":" +  str(port_num_base+5),
+        self.envsim_zmq_envsim_source_0 = envsim.zmq_envsim_source("tcp://"+ usrp_ip_list[0] + ":" +  str(port_num_base+0),
                                          10,
                                          100,
                                          samp_rate,
@@ -127,102 +107,35 @@ class env_sim_server(gr.top_block):
 
         self.envsim_socket_meta_pdu_0_2 = envsim.socket_meta_pdu("UDP_CLIENT", usrp_ip_list[0], str(port_num_base+0), 40000, False)
         self.envsim_socket_meta_pdu_0_1_3 = envsim.socket_meta_pdu("UDP_CLIENT", usrp_ip_list[2], str(port_num_base+2), 40000, False)
-        self.envsim_socket_meta_pdu_0_1_2_0 = envsim.socket_meta_pdu("UDP_CLIENT", usrp_ip_list[5], str(port_num_base+5), 40000, False)
-        self.envsim_socket_meta_pdu_0_1_1_0 = envsim.socket_meta_pdu("UDP_CLIENT", usrp_ip_list[4], str(port_num_base+4), 40000, False)
-        self.envsim_socket_meta_pdu_0_1_0_0 = envsim.socket_meta_pdu("UDP_CLIENT", usrp_ip_list[3], str(port_num_base+3), 40000, False)
         self.envsim_socket_meta_pdu_0_0_0 = envsim.socket_meta_pdu("UDP_CLIENT", usrp_ip_list[1], str(port_num_base+1), 40000, False)
-        self.channels_sro_model_0_1 = channels.sro_model(
-                samp_rate,
-                0.01,
-                1e3,
-                2
-        )
-        self.channels_sro_model_0_0 = channels.sro_model(
-                samp_rate,
-                0.01,
-                1e3,
-                1
-        )
-        self.channels_sro_model_0 = channels.sro_model(
-                samp_rate,
-                0.01,
-                1e3,
-                0
-        )
         self.blocks_throttle_0 = blocks.throttle(gr.sizeof_gr_complex*1, samp_rate,True)
-        self.blocks_tagged_stream_to_pdu_0_0 = blocks.tagged_stream_to_pdu(blocks.complex_t, 'packet_len')
         self.blocks_tagged_stream_to_pdu_0 = blocks.tagged_stream_to_pdu(blocks.complex_t, 'packet_len')
-        self.blocks_stream_to_tagged_stream_0_0 = blocks.stream_to_tagged_stream(gr.sizeof_gr_complex, 1, 2048, "packet_len")
         self.blocks_stream_to_tagged_stream_0 = blocks.stream_to_tagged_stream(gr.sizeof_gr_complex, 1, 2048, "packet_len")
         self.blocks_probe_rate_0 = blocks.probe_rate(gr.sizeof_gr_complex*1, 5000.0, 0.15)
-        self.blocks_multiply_const_xx_0_0 = blocks.multiply_const_cc(channel_gain_linear)
         self.blocks_multiply_const_xx_0 = blocks.multiply_const_cc(channel_gain_linear)
         self.blocks_message_debug_0 = blocks.message_debug()
-        self.blocks_float_to_complex_0_1 = blocks.float_to_complex(1)
-        self.blocks_float_to_complex_0_0 = blocks.float_to_complex(1)
-        self.blocks_float_to_complex_0 = blocks.float_to_complex(1)
-        self.blocks_complex_to_float_0_1 = blocks.complex_to_float(1)
-        self.blocks_complex_to_float_0_0 = blocks.complex_to_float(1)
-        self.blocks_complex_to_float_0 = blocks.complex_to_float(1)
-        self.blocks_add_xx_0_1 = blocks.add_vcc(1)
-        self.blocks_add_xx_0_0_0 = blocks.add_vcc(1)
         self.blocks_add_xx_0_0 = blocks.add_vcc(1)
         self.blocks_add_xx_0 = blocks.add_vcc(1)
-        self.analog_rail_ff_0_2 = analog.rail_ff(-1.0, 1.0)
-        self.analog_rail_ff_0_1 = analog.rail_ff(-1.0, 1.0)
-        self.analog_rail_ff_0_0_1 = analog.rail_ff(-1.0, 1.0)
-        self.analog_rail_ff_0_0_0 = analog.rail_ff(-1.0, 1.0)
-        self.analog_rail_ff_0_0 = analog.rail_ff(-1.0, 1.0)
-        self.analog_rail_ff_0 = analog.rail_ff(-1.0, 1.0)
         self.analog_noise_source_x_0 = analog.noise_source_c(analog.GR_GAUSSIAN, noise_amp, 0)
 
         ##################################################
         # Connections
         ##################################################
         self.msg_connect((self.blocks_probe_rate_0, 'rate'), (self.blocks_message_debug_0, 'print'))
-        self.msg_connect((self.blocks_tagged_stream_to_pdu_0, 'pdus'), (self.envsim_socket_meta_pdu_0_1_0_0, 'pdus'))
-        self.msg_connect((self.blocks_tagged_stream_to_pdu_0, 'pdus'), (self.envsim_socket_meta_pdu_0_1_1_0, 'pdus'))
-        self.msg_connect((self.blocks_tagged_stream_to_pdu_0, 'pdus'), (self.envsim_socket_meta_pdu_0_1_2_0, 'pdus'))
-        self.msg_connect((self.blocks_tagged_stream_to_pdu_0_0, 'pdus'), (self.envsim_socket_meta_pdu_0_0_0, 'pdus'))
-        self.msg_connect((self.blocks_tagged_stream_to_pdu_0_0, 'pdus'), (self.envsim_socket_meta_pdu_0_1_3, 'pdus'))
-        self.msg_connect((self.blocks_tagged_stream_to_pdu_0_0, 'pdus'), (self.envsim_socket_meta_pdu_0_2, 'pdus'))
-        self.connect((self.analog_noise_source_x_0, 0), (self.blocks_add_xx_0_0, 0))
-        self.connect((self.analog_noise_source_x_0, 0), (self.blocks_add_xx_0_0_0, 1))
-        self.connect((self.analog_rail_ff_0, 0), (self.blocks_float_to_complex_0, 1))
-        self.connect((self.analog_rail_ff_0_0, 0), (self.blocks_float_to_complex_0, 0))
-        self.connect((self.analog_rail_ff_0_0_0, 0), (self.blocks_float_to_complex_0_0, 0))
-        self.connect((self.analog_rail_ff_0_0_1, 0), (self.blocks_float_to_complex_0_1, 0))
-        self.connect((self.analog_rail_ff_0_1, 0), (self.blocks_float_to_complex_0_0, 1))
-        self.connect((self.analog_rail_ff_0_2, 0), (self.blocks_float_to_complex_0_1, 1))
+        self.msg_connect((self.blocks_tagged_stream_to_pdu_0, 'pdus'), (self.envsim_socket_meta_pdu_0_0_0, 'pdus'))
+        self.msg_connect((self.blocks_tagged_stream_to_pdu_0, 'pdus'), (self.envsim_socket_meta_pdu_0_1_3, 'pdus'))
+        self.msg_connect((self.blocks_tagged_stream_to_pdu_0, 'pdus'), (self.envsim_socket_meta_pdu_0_2, 'pdus'))
+        self.connect((self.analog_noise_source_x_0, 0), (self.blocks_add_xx_0_0, 1))
         self.connect((self.blocks_add_xx_0, 0), (self.blocks_multiply_const_xx_0, 0))
         self.connect((self.blocks_add_xx_0_0, 0), (self.blocks_throttle_0, 0))
-        self.connect((self.blocks_add_xx_0_0_0, 0), (self.blocks_stream_to_tagged_stream_0_0, 0))
-        self.connect((self.blocks_add_xx_0_1, 0), (self.blocks_add_xx_0, 0))
-        self.connect((self.blocks_add_xx_0_1, 0), (self.blocks_multiply_const_xx_0_0, 0))
-        self.connect((self.blocks_complex_to_float_0, 1), (self.analog_rail_ff_0, 0))
-        self.connect((self.blocks_complex_to_float_0, 0), (self.analog_rail_ff_0_0, 0))
-        self.connect((self.blocks_complex_to_float_0_0, 0), (self.analog_rail_ff_0_0_0, 0))
-        self.connect((self.blocks_complex_to_float_0_0, 1), (self.analog_rail_ff_0_1, 0))
-        self.connect((self.blocks_complex_to_float_0_1, 0), (self.analog_rail_ff_0_0_1, 0))
-        self.connect((self.blocks_complex_to_float_0_1, 1), (self.analog_rail_ff_0_2, 0))
-        self.connect((self.blocks_float_to_complex_0, 0), (self.channels_sro_model_0_1, 0))
-        self.connect((self.blocks_float_to_complex_0_0, 0), (self.channels_sro_model_0_0, 0))
-        self.connect((self.blocks_float_to_complex_0_1, 0), (self.channels_sro_model_0, 0))
-        self.connect((self.blocks_multiply_const_xx_0, 0), (self.blocks_add_xx_0_0, 1))
-        self.connect((self.blocks_multiply_const_xx_0_0, 0), (self.blocks_add_xx_0_0_0, 0))
+        self.connect((self.blocks_multiply_const_xx_0, 0), (self.blocks_add_xx_0_0, 0))
         self.connect((self.blocks_stream_to_tagged_stream_0, 0), (self.blocks_tagged_stream_to_pdu_0, 0))
-        self.connect((self.blocks_stream_to_tagged_stream_0_0, 0), (self.blocks_tagged_stream_to_pdu_0_0, 0))
+        self.connect((self.blocks_stream_to_tagged_stream_0, 0), (self.zeromq_push_sink_0_0_0_0, 0))
         self.connect((self.blocks_throttle_0, 0), (self.blocks_probe_rate_0, 0))
         self.connect((self.blocks_throttle_0, 0), (self.blocks_stream_to_tagged_stream_0, 0))
-        self.connect((self.channels_sro_model_0, 0), (self.blocks_add_xx_0, 1))
-        self.connect((self.channels_sro_model_0_0, 0), (self.blocks_add_xx_0, 2))
-        self.connect((self.channels_sro_model_0_1, 0), (self.blocks_add_xx_0, 3))
-        self.connect((self.envsim_zmq_envsim_source_0, 0), (self.blocks_complex_to_float_0, 0))
-        self.connect((self.envsim_zmq_envsim_source_0_0, 0), (self.blocks_complex_to_float_0_0, 0))
-        self.connect((self.envsim_zmq_envsim_source_0_1, 0), (self.blocks_complex_to_float_0_1, 0))
-        self.connect((self.envsim_zmq_envsim_source_0_2, 0), (self.blocks_add_xx_0_1, 0))
-        self.connect((self.envsim_zmq_envsim_source_0_2_0, 0), (self.blocks_add_xx_0_1, 1))
-        self.connect((self.envsim_zmq_envsim_source_0_2_0_0, 0), (self.blocks_add_xx_0_1, 2))
+        self.connect((self.envsim_zmq_envsim_source_0, 0), (self.blocks_add_xx_0, 0))
+        self.connect((self.envsim_zmq_envsim_source_0_0, 0), (self.blocks_add_xx_0, 1))
+        self.connect((self.envsim_zmq_envsim_source_0_1, 0), (self.blocks_add_xx_0, 2))
 
     def get_config_file(self):
         return self.config_file
@@ -331,9 +244,6 @@ class env_sim_server(gr.top_block):
 
     def set_samp_rate(self, samp_rate):
         self.samp_rate = samp_rate
-        self.channels_sro_model_0_1.set_samp_rate(self.samp_rate)
-        self.channels_sro_model_0_0.set_samp_rate(self.samp_rate)
-        self.channels_sro_model_0.set_samp_rate(self.samp_rate)
         self.blocks_throttle_0.set_sample_rate(self.samp_rate)
 
     def get_port_num_base(self):
@@ -372,7 +282,6 @@ class env_sim_server(gr.top_block):
 
     def set_channel_gain_linear(self, channel_gain_linear):
         self.channel_gain_linear = channel_gain_linear
-        self.blocks_multiply_const_xx_0_0.set_k(self.channel_gain_linear)
         self.blocks_multiply_const_xx_0.set_k(self.channel_gain_linear)
 
 
@@ -384,7 +293,7 @@ def argument_parser():
     return parser
 
 
-def main(top_block_cls=env_sim_server, options=None):
+def main(top_block_cls=env_sim_server_bot_debug, options=None):
     if options is None:
         options, _ = argument_parser().parse_args()
 

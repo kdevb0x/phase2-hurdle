@@ -5,10 +5,13 @@
   <category>[envsim]</category>
   <import>import envsim</import>
   <make>envsim.env_sink($event_name,
-                                $max_block_size,
-                                $schedule_offset,
-                                $sample_rate,
-                                $tx_pkt_len_name)
+                        $max_block_size,
+                        $schedule_offset,
+                        $sample_rate,
+                        $tx_pkt_len_name,
+                        $address,
+                        $timeout,
+                        $hwm,)
   </make>
   <param>
     <name>Event Name</name>
@@ -40,12 +43,26 @@
     <value>tx_pkt_len</value>
     <type>string</type>
   </param>
+  <param>
+    <name>Address</name>
+    <key>address</key>
+    <type>string</type>
+  </param>
+  <param>
+    <name>Timeout (msec)</name>
+    <key>timeout</key>
+    <value>100</value>
+    <type>float</type>
+  </param>
+  <param>
+    <name>High Watermark</name>
+    <key>hwm</key>
+    <value>-1</value>
+    <type>int</type>
+  </param>
+
   <sink>
     <name>in</name>
     <type>complex</type>
   </sink>
-   <source>
-    <name>event</name>
-    <type>message</type>
-  </source>
 </block>

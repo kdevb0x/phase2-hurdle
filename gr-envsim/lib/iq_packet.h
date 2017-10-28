@@ -34,15 +34,17 @@ using namespace pmt;
 // set up some constants for commonly used keys
 const pmt_t PACKET_TIMESTAMP_S(pmt::mp("timestamp_s"));
 const pmt_t PACKET_LEN(pmt::mp("packet_len"));
+const pmt_t PACKET_COUNT(pmt::mp("packet_count"));
 
-pmt_t iq_packet_create(std::string event_type, uhd::time_spec_t uhd_time);
+pmt_t iq_packet_create(std::string event_type, uhd::time_spec_t uhd_time,
+                       int count);
 
 pmt_t iq_packet_create(std::string event_type, uint64_t time_s,
-                       uint64_t time_ps, int length,
+                       uint64_t time_ps, int length, int count,
                        const std::complex<float> *data);
 
 pmt_t iq_packet_create(std::string event_type, uhd::time_spec_t uhd_time,
-                       int length, const std::complex<float> *data);
+                       int length, int count, const std::complex<float> *data);
 
 }  // namespace envsim
 }  // namespace gr

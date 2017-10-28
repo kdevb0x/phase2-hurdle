@@ -26,39 +26,7 @@ import envsim_swig as envsim
 import pmt
 import numpy as np
 
-# TODO: Update this once the envsim source handles time propoerly
-def dict_to_iq_packet(d):
-    '''
-    dict is expected to be formatted as:
-    {
-        "meta":{
-            "timestamp_s":(int_s, int_ps),
-            "packet_len":num samples in packet
-        }
-        "data":[complex samples]
-    }
-
-    Returns a pmt type formatted according to how envsim_source
-    expects it
-    '''
-
-    meta = pmt.to_pmt(d["meta"])
-    data = pmt.init_c32vector(len(d["data"]), d["data"])
-
-    return pmt.cons(meta, data)
-
-def iq_packet_to_dict(pkt):
-    '''
-    convert an iq packet in pmt format back to a dictionary
-    '''
-
-    d = {
-        "meta":pmt.to_python(pmt.car(pkt)),
-        "data":pmt.to_python(pmt.cdr(pkt))
-    }
-
-    return d
-
+from test_utils import *
 
 
 class qa_envsim_source (gr_unittest.TestCase):

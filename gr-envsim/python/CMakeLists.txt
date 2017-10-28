@@ -46,3 +46,5 @@ GR_ADD_TEST(qa_socket_meta_pdu ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/
 GR_ADD_TEST(qa_env_sink ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_env_sink.py)
 GR_ADD_TEST(qa_env_sink ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_env_sink.py)
 GR_ADD_TEST(qa_env_source ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_env_source.py)
+GR_ADD_TEST(qa_tx_time_tagger ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_tx_time_tagger.py)
+GR_ADD_TEST(qa_zmq_envsim_source ${PYTHON_EXECUTABLE} ${CMAKE_CURRENT_SOURCE_DIR}/qa_zmq_envsim_source.py)

@@ -22,8 +22,10 @@
 ########################################################################
 include(GrPlatform) #define LIB_SUFFIX
 
-include_directories(${Boost_INCLUDE_DIR})
-link_directories(${Boost_LIBRARY_DIRS})
+include_directories(${Boost_INCLUDE_DIR}
+                    ${ZEROMQ_INCLUDE_DIRS})
+link_directories(${Boost_LIBRARY_DIRS}
+                 ${ZEROMQ_LIBRARIES})
 list(APPEND envsim_sources
     iq_packet.cc
     envsim_source_impl.cc
@@ -31,7 +33,9 @@ list(APPEND envsim_sources
     stream_pdu_base.cc
     env_sink_impl.cc
     env_block_impl.cc
-    env_source_impl.cc )
+    env_source_impl.cc
+    tx_time_tagger_impl.cc
+    zmq_envsim_source_impl.cc )
 
 set(envsim_sources "${envsim_sources}" PARENT_SCOPE)
 if(NOT envsim_sources)
@@ -40,7 +44,7 @@ if(NOT envsim_sources)
 endif(NOT envsim_sources)
 
 add_library(gnuradio-envsim SHARED ${envsim_sources})
-target_link_libraries(gnuradio-envsim ${Boost_LIBRARIES} ${GNURADIO_ALL_LIBRARIES})
+target_link_libraries(gnuradio-envsim ${Boost_LIBRARIES} ${ZEROMQ_LIBRARIES} ${GNURADIO_ALL_LIBRARIES})
 set_target_properties(gnuradio-envsim PROPERTIES DEFINE_SYMBOL "gnuradio_envsim_EXPORTS")
 
 if(APPLE)

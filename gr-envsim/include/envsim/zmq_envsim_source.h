@@ -1,6 +1,6 @@
 /* -*- c++ -*- */
 /*
- * Copyright 2017 DARPA.
+ * Copyright 2017 <+YOU OR YOUR COMPANY+>.
  *
  * This is free software; you can redistribute it and/or modify
  * it under the terms of the GNU General Public License as published by
@@ -18,47 +18,38 @@
  * Boston, MA 02110-1301, USA.
  */
 
-/* The code in this module is largely inspired by concepts from
- * https://github.com/osh/gr-eventstream
- */
-
-#ifndef INCLUDED_ENVSIM_ENVSIM_SOURCE_H
-#define INCLUDED_ENVSIM_ENVSIM_SOURCE_H
+#ifndef INCLUDED_ENVSIM_ZMQ_ENVSIM_SOURCE_H
+#define INCLUDED_ENVSIM_ZMQ_ENVSIM_SOURCE_H
 
 #include <envsim/api.h>
 #include <gnuradio/sync_block.h>
-#include <pmt/pmt.h>
 
 namespace gr {
 namespace envsim {
 
 /*!
- * \brief Enforces soft real time constraints for bursty packet transmission
+ * \brief <+description of block+>
  * \ingroup envsim
  *
  */
-class ENVSIM_API envsim_source : virtual public gr::sync_block {
+class ENVSIM_API zmq_envsim_source : virtual public gr::sync_block {
  public:
-  typedef boost::shared_ptr<envsim_source> sptr;
+  typedef boost::shared_ptr<zmq_envsim_source> sptr;
 
   /*!
-   * \brief Return a shared_ptr to a new instance of envsim::envsim_source.
+   * \brief Return a shared_ptr to a new instance of envsim::zmq_envsim_source.
    *
-   * To avoid accidental use of raw pointers, envsim::envsim_source's
+   * To avoid accidental use of raw pointers, envsim::zmq_envsim_source's
    * constructor is in a private implementation
-   * class. envsim::envsim_source::make is the public interface for
+   * class. envsim::zmq_envsim_source::make is the public interface for
    * creating new instances.
    */
-  static sptr make(double sample_rate, int start_time_int_s,
-                   double start_time_frac_s);
-
-  // add getter and setter for internal time field, intended
-  // to be used for testability only
-  virtual void set_start_time(int64_t start_time_s, int64_t start_time_ps) = 0;
-  virtual pmt::pmt_t start_time() = 0;
+  static sptr make(char *address, int timeout = 100, int hwm = -1,
+                   double sample_rate = 1e6, int start_time_int_s = 0,
+                   double start_time_frac_s = 0);
 };
 
 }  // namespace envsim
 }  // namespace gr
 
-#endif /* INCLUDED_ENVSIM_ENVSIM_SOURCE_H */
+#endif /* INCLUDED_ENVSIM_ZMQ_ENVSIM_SOURCE_H */

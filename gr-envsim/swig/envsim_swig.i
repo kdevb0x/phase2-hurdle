@@ -19,6 +19,8 @@
 #include "envsim/socket_meta_pdu.h"
 #include "envsim/env_sink.h"
 #include "envsim/env_source.h"
+#include "envsim/tx_time_tagger.h"
+#include "envsim/zmq_envsim_source.h"
 %}
 
 %include "envsim/env_block.h"
@@ -103,3 +105,7 @@ GR_SWIG_BLOCK_MAGIC2(envsim, env_sink);
 GR_SWIG_BLOCK_MAGIC2(envsim, env_source);
 
 
+%include "envsim/tx_time_tagger.h"
+GR_SWIG_BLOCK_MAGIC2(envsim, tx_time_tagger);
+%include "envsim/zmq_envsim_source.h"
+GR_SWIG_BLOCK_MAGIC2(envsim, zmq_envsim_source);

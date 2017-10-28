@@ -82,8 +82,8 @@ socket_meta_pdu_impl::socket_meta_pdu_impl(std::string type, std::string addr,
                     boost::asio::placeholders::error,
                     boost::asio::placeholders::bytes_transferred));
 
-    d_logger->info("Server listening for traffic at %s",
-                   d_udp_endpoint.address().to_string().c_str());
+    d_logger->debug("Server listening for traffic at %s",
+                    d_udp_endpoint.address().to_string().c_str());
 
     set_msg_handler(PDU_PORT_ID,
                     boost::bind(&socket_meta_pdu_impl::udp_send, this, _1));
@@ -97,8 +97,8 @@ socket_meta_pdu_impl::socket_meta_pdu_impl(std::string type, std::string addr,
                     boost::asio::placeholders::error,
                     boost::asio::placeholders::bytes_transferred));
 
-    d_logger->info("Client listening for traffic from %s",
-                   d_udp_endpoint_other.address().to_string().c_str());
+    d_logger->debug("Client listening for traffic from %s",
+                    d_udp_endpoint_other.address().to_string().c_str());
 
     set_msg_handler(PDU_PORT_ID,
                     boost::bind(&socket_meta_pdu_impl::udp_send, this, _1));

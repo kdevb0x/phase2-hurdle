@@ -11,6 +11,9 @@ def main():
     parser = argparse.ArgumentParser(prog="envsim_control",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
+    parser.add_argument("--mode", default="hurdle", choices=["hurdle", "bot-debug"],
+                        help="for internal use only. Not supported for external users")
+
     subparsers = parser.add_subparsers(dest='action')
 
     # subparser for "stop" action. No args required, but doing it this way to make the commands
@@ -53,7 +56,14 @@ def main():
 
     # stop the envsim server if commanded to do so
     if args["action"] == "stop":
-        stop_cmd = ["systemctl", "stop", "envsim"]
+
+        if args["mode"] == "hurdle":
+            stop_cmd = ["systemctl", "stop", "envsim"]
+        elif args["mode"] == "bot-debug":
+            stop_cmd = ["systemctl", "stop", "envsim-bot-debug"]
+        else:
+            raise ValueError("Uknown mode {} specified".format(args["mode"]))
+
         print("Stopping envsim")
         print("running {}".format(" ".join(stop_cmd)))
         subprocess.run(stop_cmd)
@@ -79,7 +89,13 @@ def main():
             config.write(configfile)
 
         # now start the service
-        start_cmd = ["systemctl", "start", "envsim"]
+        if args["mode"] == "hurdle":
+            start_cmd = ["systemctl", "start", "envsim"]
+        elif args["mode"] == "bot-debug":
+            start_cmd = ["systemctl", "start", "envsim-bot-debug"]
+        else:
+            raise ValueError("Uknown mode {} specified".format(args["mode"]))
+
         print("Starting envsim")
         print("running {}".format(" ".join(start_cmd)))
         subprocess.run(start_cmd)

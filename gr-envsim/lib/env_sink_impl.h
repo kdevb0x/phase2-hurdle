@@ -25,6 +25,10 @@
 #include "env_block_impl.h"
 #include "iq_packet.h"
 
+#include <cstring>
+#include <sstream>
+#include <zmq.hpp>
+
 #define TX_TIME_NAME "tx_time"
 #define TX_SOB_NAME "tx_sob"
 #define TX_EOB_NAME "tx_eob"
@@ -46,6 +50,9 @@ class env_sink_impl : public env_sink, public env_block_impl {
 
   // this tracks the number of samples
   int d_remaining_samps_in_burst;
+
+  // this tracks the current packet counter
+  int d_packet_counter;
 
   //   // add some variables used to convert between wall time
   //   // and sample counts
@@ -70,12 +77,21 @@ class env_sink_impl : public env_sink, public env_block_impl {
 
   bool d_using_pkt_len_tags;
 
+  // zmq specific items
+  zmq::context_t *d_context;
+  zmq::socket_t *d_socket;
+  size_t d_vsize;
+  int d_timeout;
+
   void process_output_packet(int n_samps_to_process, const gr_complex *in);
+
+  void send_message(const void *in_buf, const int msg_len);
 
  public:
   env_sink_impl(const std::string &event_name, unsigned int max_burst_size,
                 int64_t schedule_offset_ps, double sample_rate,
-                const std::string tx_pkt_len_name);
+                const std::string tx_pkt_len_name, char *address,
+                int timeout = 100, int hwm = -1);
   ~env_sink_impl();
 
   void forecast(int noutput_items, gr_vector_int &ninput_items_required);

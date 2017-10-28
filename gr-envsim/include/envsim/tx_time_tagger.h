@@ -18,12 +18,12 @@
  * Boston, MA 02110-1301, USA.
  */
 
-#ifndef INCLUDED_ENVSIM_ENV_SINK_H
-#define INCLUDED_ENVSIM_ENV_SINK_H
+#ifndef INCLUDED_ENVSIM_TX_TIME_TAGGER_H
+#define INCLUDED_ENVSIM_TX_TIME_TAGGER_H
 
 #include <envsim/api.h>
-#include <envsim/env_block.h>
-#include <gnuradio/block.h>
+#include <gnuradio/tagged_stream_block.h>
+
 namespace gr {
 namespace envsim {
 
@@ -32,25 +32,23 @@ namespace envsim {
  * \ingroup envsim
  *
  */
-class ENVSIM_API env_sink : virtual public env_block, virtual public gr::block {
+class ENVSIM_API tx_time_tagger : virtual public gr::tagged_stream_block {
  public:
-  typedef boost::shared_ptr<env_sink> sptr;
+  typedef boost::shared_ptr<tx_time_tagger> sptr;
 
   /*!
-   * \brief Return a shared_ptr to a new instance of envsim::env_sink.
+   * \brief Return a shared_ptr to a new instance of envsim::tx_time_tagger.
    *
-   * To avoid accidental use of raw pointers, envsim::env_sink's
+   * To avoid accidental use of raw pointers, envsim::tx_time_tagger's
    * constructor is in a private implementation
-   * class. envsim::env_sink::make is the public interface for
+   * class. envsim::tx_time_tagger::make is the public interface for
    * creating new instances.
    */
-  static sptr make(const std::string &event_name, unsigned int max_block_size,
-                   int64_t schedule_offset_ps, double sample_rate,
-                   const std::string tx_pkt_len_name, char *address,
-                   int timeout = 100, int hwm = -1);
+  static sptr make(int start_time_int_s, double start_time_frac_s,
+                   double samp_rate, const std::string length_tag_key);
 };
 
 }  // namespace envsim
 }  // namespace gr
 
-#endif /* INCLUDED_ENVSIM_ENV_SINK_H */
+#endif /* INCLUDED_ENVSIM_TX_TIME_TAGGER_H */

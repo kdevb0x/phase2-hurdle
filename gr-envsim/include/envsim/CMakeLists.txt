@@ -26,5 +26,7 @@ install(FILES
     socket_meta_pdu.h
     env_sink.h
     env_block.h
-    env_source.h DESTINATION include/envsim
+    env_source.h
+    tx_time_tagger.h
+    zmq_envsim_source.h DESTINATION include/envsim
 )

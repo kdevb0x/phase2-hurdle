@@ -1,0 +1,40 @@
+<?xml version="1.0"?>
+<block>
+  <name>tx_time_tagger</name>
+  <key>envsim_tx_time_tagger</key>
+  <category>[envsim]</category>
+  <import>import envsim</import>
+  <make>envsim.tx_time_tagger($start_time_int_s,
+                              $start_time_frac_s,
+                              $samp_rate,
+                              $tx_pkt_len_name)</make>
+  <param>
+    <name>Start time int seconds</name>
+    <key>start_time_int_s</key>
+    <type>int</type>
+  </param>
+  <param>
+    <name>Start time frac seconds</name>
+    <key>start_time_frac_s</key>
+    <type>float</type>
+  </param>
+  <param>
+    <name>Sample Rate</name>
+    <key>samp_rate</key>
+    <type>float</type>
+  </param>
+  <param>
+    <name>TX Packet Length Tag</name>
+    <key>tx_pkt_len_name</key>
+    <value>tx_pkt_len</value>
+    <type>string</type>
+  </param>
+  <sink>
+    <name>in</name>
+    <type>complex</type>
+  </sink>
+  <source>
+    <name>out</name>
+    <type>complex</type>
+  </source>
+</block>

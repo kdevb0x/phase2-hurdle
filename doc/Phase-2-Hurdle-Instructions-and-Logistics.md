@@ -324,12 +324,21 @@ This will run the hurdle for 60 seconds of evaluation time and remove all 3 inst
 The execution script will print out the commands that it is running as it runs the hurdle to assist you with any required debug. When the hurdle is complete, the script will shut down all containers and copy traffic logs for the three competitor nodes and three bot nodes to the /root/phase2-hurdle/hurdle_execution/ as MGEN logs ending in ".drc". If the "--clean-competitor-containers" flag is used, it will also remove the 3 competitor containers. Note that this will prevent you from inspecting any application specific logs in your containers after a hurdle run, so use this flag only if you have no interest in those logs.
 
 ### Inspecting the Results
-If the Phase 2 Hurdle container is working as expected, you should see three MGEN logs for the practice bot containers named darpa-practice-srn1_mgen_traffic_log.drc, darpa-practice-srn2_mgen_traffic_log.drc, and darpa-practice-srn3_mgen_traffic_log.drc
+If the Phase 2 Hurdle container is working as expected, you should see the following output at the end of the hurdle script.
 
-The size of each of these files should be at least 1000 bytes. If the darpa-practice-srn*_mgen_traffic_log.drc files are
-less than 1000 bytes, contact the Phase 2 Hurdle Helpdesk at sc2-phase2-hurdles@darpa.mil.
+```text
+traffic_scoring INFO: Bot at IP: 192.168.101.2 received 252 packets from 192.168.102.2
+traffic_scoring INFO: Bot at IP: 192.168.101.2 received 252 packets from 192.168.103.2
+traffic_scoring INFO: Bot at IP: 192.168.102.2 received 247 packets from 192.168.101.2
+traffic_scoring INFO: Bot at IP: 192.168.102.2 received 257 packets from 192.168.103.2
+traffic_scoring INFO: Bot at IP: 192.168.103.2 received 246 packets from 192.168.101.2
+traffic_scoring INFO: Bot at IP: 192.168.103.2 received 250 packets from 192.168.102.2
+traffic_scoring INFO: Bot network transfered a total of 1504 packets out of 1560
+traffic_scoring INFO: Competitor network transfered a total of 0 packets out of 1560
 
-If the darpa-practice-srn MGEN log files are as expected, the Phase 2 Hurdle container is now ready for use.
+If you see less than 1450 packets transfered, your system may not have sufficient processing power to run the hurdle.
+
+If the number of transfered packets is as expected, the Phase 2 Hurdle container is now ready for use.
 
 ## Implementing a Hurdle Solution
 The general steps teams should follow when preparing solutions to the Phase 2 Hurdle are outlined below

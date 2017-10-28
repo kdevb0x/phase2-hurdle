@@ -39,10 +39,11 @@ namespace envsim {
 env_sink::sptr env_sink::make(const std::string &event_name,
                               unsigned int max_block_size,
                               int64_t schedule_offset_ps, double sample_rate,
-                              const std::string tx_pkt_len_name) {
+                              const std::string tx_pkt_len_name, char *address,
+                              int timeout, int hwm) {
   return gnuradio::get_initial_sptr(
       new env_sink_impl(event_name, max_block_size, schedule_offset_ps,
-                        sample_rate, tx_pkt_len_name));
+                        sample_rate, tx_pkt_len_name, address, timeout, hwm));
 }
 
 /*
@@ -51,7 +52,8 @@ env_sink::sptr env_sink::make(const std::string &event_name,
 env_sink_impl::env_sink_impl(const std::string &event_name,
                              unsigned int max_block_size,
                              int64_t schedule_offset_ps, double sample_rate,
-                             const std::string tx_pkt_len_name)
+                             const std::string tx_pkt_len_name, char *address,
+                             int timeout, int hwm)
     : gr::block("env_sink", gr::io_signature::make(1, 1, sizeof(gr_complex)),
                 gr::io_signature::make(0, 0, 0)),
       d_max_block_size(max_block_size),
@@ -61,17 +63,44 @@ env_sink_impl::env_sink_impl(const std::string &event_name,
       d_itemsize(sizeof(gr_complex)),
       d_remaining_samps_in_burst(0),
       d_sample_rate(sample_rate),
+      d_packet_counter(0),
       d_tx_time_tag(pmt::mp(TX_TIME_NAME)),
       d_tx_pkt_len_tag(pmt::mp(tx_pkt_len_name)),
       d_tx_sob_tag(pmt::mp(TX_SOB_NAME)),
-      d_tx_eob_tag(pmt::mp(TX_EOB_NAME)) {
-  // port that publishes events
-  message_port_register_out(pmt::mp("event"));
+      d_tx_eob_tag(pmt::mp(TX_EOB_NAME)),
+      d_vsize(sizeof(gr_complex)),
+      d_timeout(timeout) {
+  /* "Fix" timeout value (ms for new API, us for old API) */
+  int major, minor, patch;
+  zmq::version(&major, &minor, &patch);
+
+  if (major < 3) {
+    d_timeout *= 1000;
+  }
+
+  /* Create context & socket */
+  d_context = new zmq::context_t(1);
+  d_socket = new zmq::socket_t(*d_context, ZMQ_PUSH);
+
+  /* Set high watermark */
+  if (hwm >= 0) {
+#ifdef ZMQ_SNDHWM
+    d_socket->setsockopt(ZMQ_SNDHWM, &hwm, sizeof(hwm));
+#else  // major < 3
+    uint64_t tmp = hwm;
+    d_socket->setsockopt(ZMQ_HWM, &tmp, sizeof(tmp));
+#endif
+  }
+  /* Bind */
+  d_socket->bind(address);
 
   // initialize this block's time
   struct timeval tv1;
   gettimeofday(&tv1, NULL);
   d_block_time = uhd::time_spec_t(tv1.tv_sec, double(tv1.tv_usec) / 1e6);
+
+  d_logger->info("block time initialized to %i %f s",
+                 d_block_time.get_full_secs(), d_block_time.get_frac_secs());
 
   // save off whether we're using packet length tags or assuming to use tx_sob
   // tags
@@ -81,7 +110,21 @@ env_sink_impl::env_sink_impl(const std::string &event_name,
 /*
  * Our virtual destructor.
  */
-env_sink_impl::~env_sink_impl() {}
+env_sink_impl::~env_sink_impl() {
+  d_socket->close();
+  delete d_socket;
+  delete d_context;
+}
+
+void env_sink_impl::send_message(const void *in_buf, const int msg_len) {
+  zmq::message_t msg(msg_len);
+  memcpy(msg.data(), in_buf, msg_len);
+
+  /* Send */
+  d_socket->send(msg);
+
+  return;
+}
 
 void env_sink_impl::process_output_packet(int n_samps_to_process,
                                           const gr_complex *in) {
@@ -89,9 +132,12 @@ void env_sink_impl::process_output_packet(int n_samps_to_process,
   // event
 
   d_logger->debug("processing %i samples", n_samps_to_process);
+  uhd::time_spec_t pkt_time = d_block_time + d_schedule_offset_ps / 1e12;
+  pmt::pmt_t iq_pkt = iq_packet_create(
+      d_event_name, pkt_time, n_samps_to_process, d_packet_counter, &in[0]);
 
-  pmt::pmt_t ip_pkt =
-      iq_packet_create(d_event_name, d_block_time, n_samps_to_process, &in[0]);
+  // update our internal packet counter
+  d_packet_counter += 1;
 
   // update the block time
   d_logger->debug("incrementing block time by %f seconds",
@@ -102,11 +148,17 @@ void env_sink_impl::process_output_packet(int n_samps_to_process,
   d_logger->debug("block time now %i %f s", d_block_time.get_full_secs(),
                   d_block_time.get_frac_secs());
 
-  // ensure the ip packet pmt doesn't get garbage collected before the next
+  // ensure the iq packet pmt doesn't get garbage collected before the next
   // iteration of this block
-  d_event_list.push_back(ip_pkt);
+  d_event_list.push_back(iq_pkt);
 
-  message_port_pub(pmt::mp("event"), d_event_list.back());
+  d_logger->debug("sending packet with start timestamp of %i %f",
+                  pkt_time.get_full_secs(), pkt_time.get_frac_secs());
+
+  // serialize and send packet
+  std::stringbuf sb("");
+  pmt::serialize(iq_pkt, sb);
+  send_message(sb.str().c_str(), sb.str().length());
 }
 
 void env_sink_impl::forecast(int noutput_items,
@@ -138,19 +190,6 @@ int env_sink_impl::general_work(int noutput_items, gr_vector_int &ninput_items,
   // clear out event list (just in case)
   d_event_list.clear();
 
-  if (d_first_iteration) {
-    // send initial zero length packet to connect to server
-    // TODO: make dedicated function for this instead of abusing iq_packet
-    pmt::pmt_t ip_pkt = iq_packet_create(d_event_name, d_block_time);
-
-    d_event_list.push_back(ip_pkt);
-    d_logger->debug("sending zero length packet");
-    message_port_pub(pmt::mp("event"), d_event_list.back());
-
-    consume_each(0);
-    return 0;
-  }
-
   // check if there are any remaining samples in the current burst
   if (d_remaining_samps_in_burst > 0) {
     d_logger->debug("We are mid-burst: samples remaining in burst: %ld",
@@ -170,9 +209,10 @@ int env_sink_impl::general_work(int noutput_items, gr_vector_int &ninput_items,
 
     for (std::vector<tag_t>::iterator it = tags_in.begin(); it != tags_in.end();
          ++it) {
-      d_logger->warn("Ignoring tag at offset %ld with key %s and value %s",
-                     it->offset, pmt::write_string(it->key).c_str(),
-                     pmt::write_string(it->value).c_str());
+      d_logger->warn(
+          "mid-burst: Ignoring tag at offset %ld with key %s and value %s",
+          it->offset, pmt::write_string(it->key).c_str(),
+          pmt::write_string(it->value).c_str());
     }
 
     // decrement n_samples in burst
@@ -203,14 +243,14 @@ int env_sink_impl::general_work(int noutput_items, gr_vector_int &ninput_items,
     // TODO: Come back and harmonize this with default UHD behavior of dropping
     // samples when packet length tags are not where they are expected to be
     if (tx_pkt_len_tags.size() == 0) {
-      d_logger->debug("no packet length tags found");
+      d_logger->warn("no packet length tags found");
       n_samps_to_process = ninput_items[0];
 
       // making sure block fits in max block size
       n_samps_to_process = std::min(n_samps_to_process, d_max_block_size);
 
       // generate and send iq packet
-      d_logger->debug("no packet len tags found. outputting sample block");
+      d_logger->warn("no packet len tags found. outputting sample block");
       process_output_packet(n_samps_to_process, in);
 
       // Tell runtime system how many output items we produced.
@@ -254,6 +294,10 @@ int env_sink_impl::general_work(int noutput_items, gr_vector_int &ninput_items,
     n_samps_to_process = std::min(n_samps_to_process, d_max_block_size);
 
     d_remaining_samps_in_burst = pkt_len - n_samps_to_process;
+    d_logger->debug(
+        "processing packet len tag: pkt len: %i  samps to process: %i samps "
+        "remaining in burst: %i",
+        pkt_len, n_samps_to_process, d_remaining_samps_in_burst);
 
     std::vector<tag_t> tx_time_tags;
     get_tags_in_window(tx_time_tags, 0, 0, noutput_items, d_tx_time_tag);
@@ -269,19 +313,26 @@ int env_sink_impl::general_work(int noutput_items, gr_vector_int &ninput_items,
       double frac_seconds =
           pmt::to_double(pmt::tuple_ref(tx_time_tags[0].value, 1));
 
+      d_logger->debug("tag found with timestamp: %i %f s", int_seconds,
+                      frac_seconds);
       uhd::time_spec_t new_time(int_seconds, frac_seconds);
-      if (new_time > d_block_time) {
+
+      // adding 0.1 of a sample to the test to account for meaninless precision
+      // errors
+      if (new_time + 0.1 / d_sample_rate >= d_block_time) {
         d_logger->debug("updating block time to match tag: %i %f s",
                         int_seconds, frac_seconds);
-        d_block_time = new_time;
 
       } else {
         d_logger->warn(
-            "ignoring time tag: block time of %i %f is ahead of tag time: %i "
-            "%f s",
+            "tagged stream mode: block time of %i %f is ahead of "
+            "tag time: %i "
+            "%f s, this may indicate a math error in tx_time tag inputs, "
+            "updating block time",
             d_block_time.get_full_secs(), d_block_time.get_frac_secs(),
             int_seconds, frac_seconds);
       }
+      d_block_time = new_time;
     }
     // TODO: Warn that we're ignoring this TX time tag if the offset doesn't
     // match up
@@ -377,17 +428,22 @@ int env_sink_impl::general_work(int noutput_items, gr_vector_int &ninput_items,
           pmt::to_double(pmt::tuple_ref(tx_time_tags[0].value, 1));
 
       uhd::time_spec_t new_time(int_seconds, frac_seconds);
-      if (new_time > d_block_time) {
+
+      // adding 0.1 of a sample to the time test to account for meaningless
+      // precision issues
+      if (new_time + 0.1 / d_sample_rate >= d_block_time) {
         d_logger->debug("updating block time to match tag: %i %f s",
                         int_seconds, frac_seconds);
-        d_block_time = new_time;
       } else {
         d_logger->warn(
-            "ignoring time tag: block time of %i %f is ahead of tag time: %i "
-            "%f s",
+            "TX SOB mode: block time of %i %f is ahead of "
+            "tag time: %i "
+            "%f s, this may indicate a math error in tx_time tag inputs, "
+            "updating block time",
             d_block_time.get_full_secs(), d_block_time.get_frac_secs(),
             int_seconds, frac_seconds);
       }
+      d_block_time = new_time;
     }
     // TODO: Warn that we're ignoring this TX time tag if the offset doesn't
     // match up

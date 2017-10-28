@@ -137,6 +137,8 @@ endif(APPLE)
 find_package(CppUnit)
 find_package(Doxygen)
 find_package(UHD)
+find_package(ZeroMQ)
+
 
 # Search for GNU Radio and its components and versions. Add any
 # components required to the list of GR_REQUIRED_COMPONENTS (in all
@@ -171,14 +173,16 @@ include_directories(
     ${Boost_INCLUDE_DIRS}
     ${CPPUNIT_INCLUDE_DIRS}
     ${UHD_INCLUDE_DIRS}
+    ${ZEROMQ_INCLUDE_DIRS}
     ${GNURADIO_ALL_INCLUDE_DIRS}
-    
+
 )
 
 link_directories(
     ${Boost_LIBRARY_DIRS}
     ${CPPUNIT_LIBRARY_DIRS}
     ${UHD_LIBRARY_DIRS}
+    ${ZEROMQ_LIBRARIES}
     ${GNURADIO_RUNTIME_LIBRARY_DIRS}
 )
 

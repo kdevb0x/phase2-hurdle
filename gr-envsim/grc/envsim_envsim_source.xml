@@ -4,11 +4,24 @@
   <key>envsim_envsim_source</key>
   <category>[envsim]</category>
   <import>import envsim</import>
-  <make>envsim.envsim_source($sample_rate)</make>
+  <make>envsim.envsim_source($sample_rate,
+                             $start_time_int_s,
+                             $start_time_frac_s)
+  </make>
   <param>
     <name>Sample Rate</name>
     <key>sample_rate</key>
     <value>samp_rate</value>
+    <type>float</type>
+  </param>
+  <param>
+    <name>Start time int seconds</name>
+    <key>start_time_int_s</key>
+    <type>int</type>
+  </param>
+  <param>
+    <name>Start time frac seconds</name>
+    <key>start_time_frac_s</key>
     <type>float</type>
   </param>
   <sink>

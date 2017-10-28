@@ -21,5 +21,7 @@ install(FILES
     envsim_socket_meta_pdu.xml
     envsim_env_sink.xml
     envsim_env_sink.xml
-    envsim_env_source.xml DESTINATION share/gnuradio/grc/blocks
+    envsim_env_source.xml
+    envsim_tx_time_tagger.xml
+    envsim_zmq_envsim_source.xml DESTINATION share/gnuradio/grc/blocks
 )

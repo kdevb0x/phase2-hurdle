@@ -19,6 +19,7 @@ NW_INTERFACE_CONFIG_DEST_PATH = "/etc/network/interfaces.d"
 
 PRACTICE_BOT_NAME_PATTERN = "darpa-practice-srn"
 HURDLE_BOT_NAME_PATTERN = "darpa-hurdle-srn"
+DUMMY_BOT_NAME_PATTERN = "dummy-tx-srn"
 
 IMAGE_PATH = "/share/nas/competitor/images/"
 
@@ -120,7 +121,7 @@ def main():
 
     parser.add_argument('--image-name', default="darpa-practice-srn-base-v1-0-0.tar.gz",
                         help="The lxc image name we'll generate containers from, assumed to be in /share/nas/competitor/images/")
-    parser.add_argument('--bot-type', choices=["practice", "hurdle"],
+    parser.add_argument('--bot-type', choices=["practice", "hurdle", "dummy"],
                         default="practice", help="What type of bot is this?")
     parser.add_argument('--num-containers', default=3, type=int,
                         help="How many containers we are standing up")
@@ -130,8 +131,10 @@ def main():
 
     if args["bot_type"] == "practice":
         container_name_pattern = PRACTICE_BOT_NAME_PATTERN
-    else:
+    elif args["bot_type"] == "hurdle":
         container_name_pattern = HURDLE_BOT_NAME_PATTERN
+    else:
+        container_name_pattern = DUMMY_BOT_NAME_PATTERN
 
     # working with N bot containers. Build up list of container names
     bot_container_names = [container_name_pattern+"{}".format(i) for i in range(1,args["num_containers"]+1)]
