@@ -8,7 +8,7 @@ def make_usrp_ip_list(increment_address, ip_prefix, ip_base, num_nodes):
 
     IP prefix must be of the form "192.168.40."
 
-    IP base is an int. 
+    IP base is an int.
 
     Resulting list will be ip_prefix + "{}".format(ip_base +i)
     '''

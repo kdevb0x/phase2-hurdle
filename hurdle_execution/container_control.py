@@ -14,9 +14,9 @@ def control_container(client, cont_name, action):
         container = client.containers.get(cont_name)
         print("{}ing container {}".format(action, cont_name))
         if action == "start":
-            container.start()
+            container.start(wait=True)
         elif action == "stop":
-            container.stop()
+            container.stop(wait=True)
         else:
             raise NameError("Uknown action specified: {}".format(action))
 

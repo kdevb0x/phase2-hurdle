@@ -11,6 +11,8 @@ import subprocess
 import sys
 import time
 
+from constants import RESULT_FILENAME
+
 from mgen_parser import mgen_parser
 from traffic_scoring import score_traffic
 
@@ -24,8 +26,9 @@ CONTAINER_BOOT_TIMEOUT=300.0
 COMMAND_PATH_BASE="./"
 
 ENVSIM_PORT_NUM_BASE=52001
+ENVSIM_CONFIG_PATH = "/root/phase2-hurdle/gr-envsim/apps/envsim.ini"
 
-RESULT_FILENAME="hurdle_packet_counts.json"
+
 
 # USRP Interfaces start at 192.168.40.<USRP0_IP_BASE + node num (0 indexed)>
 USRP_IP_PREFIX = "192.168.40."
@@ -272,8 +275,8 @@ def main():
     parser = argparse.ArgumentParser(prog="run_hurdle",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument("--bot-mode", choices=["practice", "dummy"], default="practice",
-                        help="Currently only practice bots are supported. Hurdle bots to be added at a later date")
+    parser.add_argument("--bot-mode", choices=["practice", "scoring", "dummy"], default="practice",
+                        help="Practice or Scoring mode")
 
     parser.add_argument('--duration', type=float, default=300.0,
                         help="How long to run hurdle, not including bootup, in seconds")
@@ -290,7 +293,7 @@ def main():
     parser.add_argument('--clean-competitor-containers', action="store_true", default=False,
                         help="When specified, this flag will make the run script remove the competitor containers at the end of a run")
 
-    parser.add_argument('--packet-rate', type=float, default=5.0,
+    parser.add_argument('--packet-rate', type=float, default=15.0,
                         help="Packet rate for bots and competitors")
 
     parser.add_argument('--noise-amp', type=float, default=0.0001,
@@ -299,6 +302,10 @@ def main():
     parser.add_argument('--chan-gain-linear', type=float, default=0.1,
                         help="Channel gain as a linear scalar applied to each channel")
 
+    parser.add_argument('--enable-debug-output', action="store_true", default=False,
+                        help="When specified, this flag will run the envsim with a ZMQ push socket that outputs the samples sent to competitor containers")
+
+
     # parse args and store to dictionary
     args = vars(parser.parse_args())
 
@@ -306,12 +313,12 @@ def main():
     lxd_client = pylxd.Client()
 
 
-    # set up whether we're using practice or hurdle bot mode.
+    # set up whether we're using practice or scoring bot mode.
     if args["bot_mode"] == "practice":
         bot_name_base = "darpa-practice-srn"
 
-    elif args["bot_mode"] == "hurdle":
-        bot_name_base = "darpa-hurdle-srn"
+    elif args["bot_mode"] == "scoring":
+        bot_name_base = "darpa-scoring-srn"
 
     # used only for internal debug
     elif args["bot_mode"] == "dummy":
@@ -397,16 +404,22 @@ def main():
         sys.exit(1)
 
 
+
     # start envsim
     cmd = [os.path.join(COMMAND_PATH_BASE, "envsim_control.py"),
-           "--mode={}".format(envsim_mode),
-           "start",
-           "--port-num-base={}".format(ENVSIM_PORT_NUM_BASE),
-           "--samp-rate={}".format(args["sample_rate"]),
-           "--usrp-ip-prefix={}".format(USRP_IP_PREFIX),
-           "--usrp-ip-base={}".format(USRP_IP_BASE),
-           "--channel-gain-linear={}".format(args["chan_gain_linear"]),
-           "--noise-amp={}".format(args["noise_amp"])]
+           "--mode={}".format(envsim_mode)]
+
+    if args["enable_debug_output"]:
+        cmd.append("--enable-debug-output")
+
+    cmd.extend(["start",
+                "--port-num-base={}".format(ENVSIM_PORT_NUM_BASE),
+                "--samp-rate={}".format(args["sample_rate"]),
+                "--usrp-ip-prefix={}".format(USRP_IP_PREFIX),
+                "--usrp-ip-base={}".format(USRP_IP_BASE),
+                "--channel-gain-linear={}".format(args["chan_gain_linear"]),
+                "--noise-amp={}".format(args["noise_amp"]),
+                "--envsim-config-file={}".format(ENVSIM_CONFIG_PATH)])
 
     print("Starting envsim by running {}".format(" ".join(cmd)))
     ret_code = run_subproc_and_print_output(cmd)
@@ -479,8 +492,12 @@ def main():
 
     #   stop envsim
     cmd = [os.path.join(COMMAND_PATH_BASE, "envsim_control.py"),
-           "--mode={}".format(envsim_mode),
-           "stop"]
+           "--mode={}".format(envsim_mode)]
+
+    if args["enable_debug_output"]:
+        cmd.append("--enable-debug-output")
+
+    cmd.append("stop")
 
     print("Stopping envsim by running {}".format(" ".join(cmd)))
     ret_code = run_subproc_and_print_output(cmd)

@@ -14,6 +14,10 @@ def main():
     parser.add_argument("--mode", default="hurdle", choices=["hurdle", "bot-debug"],
                         help="for internal use only. Not supported for external users")
 
+    parser.add_argument('--enable-debug-output', action="store_true", default=False,
+                        help="When specified, this flag will run the envsim with a ZMQ push socket that outputs the samples sent to competitor containers")
+
+
     subparsers = parser.add_subparsers(dest='action')
 
     # subparser for "stop" action. No args required, but doing it this way to make the commands
@@ -58,7 +62,11 @@ def main():
     if args["action"] == "stop":
 
         if args["mode"] == "hurdle":
-            stop_cmd = ["systemctl", "stop", "envsim"]
+            if args["enable_debug_output"]:
+                stop_cmd = ["systemctl", "stop", "envsim-debug-output"]
+            else:
+                stop_cmd = ["systemctl", "stop", "envsim"]
+
         elif args["mode"] == "bot-debug":
             stop_cmd = ["systemctl", "stop", "envsim-bot-debug"]
         else:
@@ -90,7 +98,10 @@ def main():
 
         # now start the service
         if args["mode"] == "hurdle":
-            start_cmd = ["systemctl", "start", "envsim"]
+            if args["enable_debug_output"]:
+                start_cmd = ["systemctl", "start", "envsim-debug-output"]
+            else:
+                start_cmd = ["systemctl", "start", "envsim"]
         elif args["mode"] == "bot-debug":
             start_cmd = ["systemctl", "start", "envsim-bot-debug"]
         else:

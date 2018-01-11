@@ -4,6 +4,8 @@ from datetime import datetime, timedelta
 import json
 
 import logging
+
+
 logger = logging.getLogger(__name__)
 
 
@@ -81,7 +83,7 @@ def score_traffic(bot_traffic_logs, competitor_traffic_logs, num_packets, json_l
     bot_scoring = {}
     comp_scoring = {}
 
-    total_score = {}
+    total_score = {"input_packets_per_network":num_packets}
 
     for traffic_log in bot_traffic_logs:
         # process each log and store results by destination address
@@ -127,10 +129,10 @@ def score_traffic(bot_traffic_logs, competitor_traffic_logs, num_packets, json_l
 
     total_score["competitors"]["total"] = total_comp_packets
 
-    logger.info("Bot network transfered a total of %i packets out of %i",
-                total_bot_packets, num_packets)
-    logger.info("Competitor network transfered a total of %i packets out of %i",
-                total_comp_packets, num_packets)
+    logger.info("Bot network transfered a total of %i packets out of %i, %f packet success rate",
+                total_bot_packets, num_packets, float(total_bot_packets)/float(num_packets))
+    logger.info("Competitor network transfered a total of %i packets out of %i, %f packet success rate",
+                total_comp_packets, num_packets, float(total_comp_packets)/float(num_packets))
 
 
     # save results to file
