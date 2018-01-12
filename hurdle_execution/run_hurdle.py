@@ -453,7 +453,8 @@ def main():
     cmd = [os.path.join(COMMAND_PATH_BASE, "traffic_control.py"),
            "start",
            "--traffic-duration", str(args["duration"]),
-           "--bot-peak-msg-rate={}".format(args["packet_rate"])]
+           "--bot-peak-msg-rate={}".format(args["packet_rate"]),
+           "--comp-peak-msg-rate={}".format(args["packet_rate"])]
 
     print("Starting traffic by running {}".format(" ".join(cmd)))
     ret_code = run_subproc_and_print_output(cmd)
