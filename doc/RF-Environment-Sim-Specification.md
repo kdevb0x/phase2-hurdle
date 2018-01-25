@@ -2,9 +2,9 @@
 https://spectrumcollaborationchallenge.com
 
 # RF Environment Simulator
-The RF Environment Simulator is used to allow competitor radios to communicate amongst themselves and interact with Bot radios over a simulated RF channel. The simulator is implemented in [GNU Radio](https://www.gnuradio.org/) and incorporates an [out-of-tree module](https://wiki.gnuradio.org/index.php/OutOfTreeModules) named gr-envsim. 
+The RF Environment Simulator is used to allow competitor radios to communicate amongst themselves and interact with Bot radios over a simulated RF channel. The simulator is implemented in [GNU Radio](https://www.gnuradio.org/) and incorporates an [out-of-tree module](https://wiki.gnuradio.org/index.php/OutOfTreeModules) named gr-envsim.
 
-The details below will assist you in successfully integrating your design with the RF Environment Simulator. The expectation is that competitors will use GNU Radio based designs to complete the Phase 2 Hurdle. Competitors not intending to use GNU Radio in their solutions are strongly encouraged to at mimumum use GNU Radio for the portion of their design that interfaces with the RF Environment Simulator. This SC2 provided [out-of-tree module](../gr-envsim/) provides custom GNU Radio blocks to help. 
+The details below will assist you in successfully integrating your design with the RF Environment Simulator. The expectation is that competitors will use GNU Radio based designs to complete the Phase 2 Hurdle. Competitors not intending to use GNU Radio in their solutions are strongly encouraged to at mimumum use GNU Radio for the portion of their design that interfaces with the RF Environment Simulator. This SC2 provided [out-of-tree module](../gr-envsim/) provides custom GNU Radio blocks to help. A debug mode is available to help visualize what transmissions appear in the RF Environment. See the documentation for this debug mode [here](Envsim-Debug-Mode.md)
 
 ## Environment Simulator Features
 The RF Environment Simulator has two primary design goals:
@@ -15,10 +15,10 @@ The RF Environment Simulator has two primary design goals:
 ### Real Time Streaming
 To achieve the the first goal, the RF Environment Simulator uses an **envsim_source** block to accept
 timestamped packets from clients and zero fill any gaps in time. This allows clients to transmit continuously or in a bursty manner and ensures that time progresses in a realistic manner. Packets that
-show up late will be dropped. 
+show up late will be dropped.
 
 Samples from multiple clients will be combined in a flowgraph that imparts channel noise and can apply
-impairments such as transmit power limitations, local oscillator offsets, and timing errors. 
+impairments such as transmit power limitations, local oscillator offsets, and timing errors.
 
 ### USRP Interface
 The RF Environment Simulator achieves the second goal through duplicating the interfaces provided by
@@ -45,12 +45,12 @@ All functions in the [gr::uhd::usrp_block](https://gnuradio.org/doc/doxygen/clas
 
 #### Implemented Functions
 
-##### `public uhd::time_spec_t ` `get_time_now` `(size_t mboard)` 
+##### `public uhd::time_spec_t ` `get_time_now` `(size_t mboard)`
 
 Get the current time registers.
 
 ##### Parameters
-* `mboard` the motherboard index 0 to M-1 
+* `mboard` the motherboard index 0 to M-1
 
 ##### Returns
 the current usrp time
@@ -59,7 +59,7 @@ the current usrp time
 ### envsim::env_sink.h Reference
 The envsim::env_sink block inherits from [envsim::env_block.h](../gr-envsim/include/envsim/env_block.h) and is intended to emulate the [gr::uhd::usrp_sink](https://gnuradio.org/doc/doxygen/classgr_1_1uhd_1_1usrp__sink.html) block. It accepts streaming complex samples, bundles them into timestamped messages, and passes them out to a [envsim::socket_meta_pdu.h](../gr-envsim/include/envsim/socket_meta_pdu.h) block.
 
-This block consumes stream tags similarly to the [gr::uhd::usrp_sink](https://gnuradio.org/doc/doxygen/classgr_1_1uhd_1_1usrp__sink.html) block to enable bursty transmissions. More detail on this will be provided at a later date, but topics to research in the meantime would include GNU Radio Stream Tags [here](https://wiki.gnuradio.org/index.php/Guided_Tutorial_Programming_Topics#5.2_Stream_Tags) and [here](https://gnuradio.org/doc/doxygen/page_stream_tags.html) as well as the **TX Stream tagging** section [here](https://gnuradio.org/doc/doxygen/classgr_1_1uhd_1_1usrp__sink.html)
+This block consumes stream tags similarly to the [gr::uhd::usrp_sink](https://gnuradio.org/doc/doxygen/classgr_1_1uhd_1_1usrp__sink.html) block to enable bursty transmissions. More detail on this can be found [here](Timed-Transmissions-with-Stream-Tags.md). Other topics to research include GNU Radio Stream Tags [here](https://wiki.gnuradio.org/index.php/Guided_Tutorial_Programming_Topics#5.2_Stream_Tags) and [here](https://gnuradio.org/doc/doxygen/page_stream_tags.html) as well as the **TX Stream tagging** section [here](https://gnuradio.org/doc/doxygen/classgr_1_1uhd_1_1usrp__sink.html)
 
 This block will use either the "tx_sob"/"tx_eob" tag pairs approach or the "tagged_stream" approach. Leave the "tx_pkt_len_name" parameter in the env_sink constructor blank to use "tx_sob"/"tx_eob" tag pairs.
 

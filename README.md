@@ -18,8 +18,9 @@ followed by [Instructions and Logistics][phase 2 hurdle instructions and logisti
 * [Colosseum Radio API Specification](doc/Colosseum-Radio-Api-Specification.md)
 * [Collaboration Protocol Specification](doc/Collaboration-Protocol-Specification.md)
 * [Practice Bot Behavior Specification](doc/Practice-Bot-Specification.md)
-* **Hurdle Bot Behavior Specification** To be released at a later date
+* [Scoring Bot Behavior Specification](doc/Scoring-Bot-Specification.md)
 * [RF Environment Simulator Specification](doc/RF-Environment-Sim-Specification.md)
+* [Timed Transmissions with Stream Tags](doc/Timed-Transmissions-with-Stream-Tags.md)
 
 These files can all be found under the [doc/](doc/) directory in this repository.
 
